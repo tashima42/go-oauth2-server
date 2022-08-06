@@ -1,7 +1,6 @@
-package main_test
+package main
 
 import (
-	//"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tashima42/go-oauth2-server"
+	"github.com/tashima42/go-oauth2-server/data"
 )
 
-var a main.App
+var a App
 
 func TestMain(m *testing.M) {
 	a.Initialize(
@@ -42,9 +41,9 @@ func TestLogin(t *testing.T) {
 	clearTable()
 
 	password := "secret"
-	u := main.UserAccount{Username: "user1@example.com", Password: password, Country: "AR", SubscriberId: "subscriber1"}
+	u := data.UserAccount{Username: "user1@example.com", Password: password, Country: "AR", SubscriberId: "subscriber1"}
 	u.CreateUserAccount(a.DB)
-	c := main.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
 
 	state := "currentstate"
@@ -83,11 +82,11 @@ func TestLogin(t *testing.T) {
 func TestCreateTokenWithAuthorizationCode(t *testing.T) {
 	clearTable()
 
-	u := main.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
+	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
 	u.CreateUserAccount(a.DB)
-	c := main.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
-	ac := main.AuthorizationCode{ClientId: c.ID, RedirectUri: c.RedirectUri, UserAccountId: u.ID}
+	ac := data.AuthorizationCode{ClientId: c.ID, RedirectUri: c.RedirectUri, UserAccountId: u.ID}
 	ac.CreateAuthorizationCode(a.DB)
 
 	data := url.Values{}
@@ -123,11 +122,11 @@ func TestCreateTokenWithAuthorizationCode(t *testing.T) {
 func TestCreateTokenWithRefreshToken(t *testing.T) {
 	clearTable()
 
-	u := main.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
+	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
 	u.CreateUserAccount(a.DB)
-	c := main.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
-	tk := main.Token{ClientId: c.ID, UserAccountId: u.ID}
+	tk := data.Token{ClientId: c.ID, UserAccountId: u.ID}
 	tk.CreateToken(a.DB)
 
 	data := url.Values{}
@@ -164,11 +163,11 @@ func TestUserInfo(t *testing.T) {
 
 	subscriberId := "subscriber1"
 	countryCode := "AR"
-	u := main.UserAccount{Username: "user1@example.com", Password: "secret", Country: countryCode, SubscriberId: subscriberId}
+	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: countryCode, SubscriberId: subscriberId}
 	u.CreateUserAccount(a.DB)
-	c := main.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
-	tk := main.Token{ClientId: c.ID, UserAccountId: u.ID}
+	tk := data.Token{ClientId: c.ID, UserAccountId: u.ID}
 	tk.CreateToken(a.DB)
 
 	req, _ := http.NewRequest(http.MethodGet, "/userinfo", nil)
