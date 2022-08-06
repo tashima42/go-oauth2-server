@@ -160,6 +160,8 @@ func TestCreateTokenWithRefreshToken(t *testing.T) {
 }
 
 func TestUserInfo(t *testing.T) {
+	clearTable()
+
 	subscriberId := "subscriber1"
 	countryCode := "AR"
 	u := main.UserAccount{Username: "user1@example.com", Password: "secret", Country: countryCode, SubscriberId: subscriberId}
