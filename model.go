@@ -133,12 +133,40 @@ func (u *UserAccount) GetByUsernameAndCountry(db *sql.DB, username string, count
 	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
 }
 
+func (u *UserAccount) GetById(db *sql.DB, id int) error {
+	return db.QueryRow(
+		"SELECT id, username, password, country, subscriber_id FROM user_accounts WHERE id=$1 LIMIT 1;",
+		id,
+	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
+}
+
 func (t *Token) GetByRefreshToken(db *sql.DB, refreshToken string) error {
 	var accessTokenExpiresAt string
 	var refreshTokenExpiresAt string
 	err := db.QueryRow(
 		"SELECT id, access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id, active FROM tokens WHERE refresh_token=$1 LIMIT 1;",
 		refreshToken,
+	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientId, &t.UserAccountId, &t.Active)
+	if err != nil {
+		return err
+	}
+	t.AccessTokenExpiresAt, err = parseDateIso(accessTokenExpiresAt)
+	if err != nil {
+		return err
+	}
+	t.RefreshTokenExpiresAt, err = parseDateIso(refreshTokenExpiresAt)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *Token) GetByAccessToken(db *sql.DB, accessToken string) error {
+	var accessTokenExpiresAt string
+	var refreshTokenExpiresAt string
+	err := db.QueryRow(
+		"SELECT id, access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id, active FROM tokens WHERE access_token=$1 LIMIT 1;",
+		accessToken,
 	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientId, &t.UserAccountId, &t.Active)
 	if err != nil {
 		return err

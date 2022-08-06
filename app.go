@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
@@ -38,6 +39,7 @@ func (a *App) Run(addr string) {
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/auth/login", a.login).Methods("POST")
 	a.Router.HandleFunc("/auth/token", a.token).Methods("POST")
+	a.Router.HandleFunc("/userinfo", a.userInfo).Methods("GET")
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/views/")))
 }
 
@@ -184,6 +186,35 @@ func (a *App) token(w http.ResponseWriter, r *http.Request) {
 		RefreshTokenExpiresIn: 2628288,
 	}
 	respondWithJSON(w, http.StatusOK, tokenResponse)
+}
+
+func (a *App) userInfo(w http.ResponseWriter, r *http.Request) {
+	type UserInfoResponseDTO struct {
+		Success      bool   `json:"success"`
+		SubscriberId string `json:"subscriber_id"`
+		CountryCode  string `json:"country_code"`
+	}
+
+	accessToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(accessToken, "Bearer ")
+	accessToken = splitToken[1]
+
+	t := Token{}
+	err := t.GetByAccessToken(a.DB, accessToken)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "USERINFO-INVALID-ACCESS-TOKEN", err.Error())
+		return
+	}
+
+	u := UserAccount{}
+	err = u.GetById(a.DB, t.UserAccountId)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "USERINFO-FAILED-GET-USER", err.Error())
+		return
+	}
+
+	userInfoResponse := UserInfoResponseDTO{Success: true, SubscriberId: u.SubscriberId, CountryCode: u.Country}
+	respondWithJSON(w, http.StatusOK, userInfoResponse)
 }
 
 func respondWithError(w http.ResponseWriter, code int, errorCode string, message string) {

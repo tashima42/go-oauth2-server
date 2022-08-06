@@ -3,6 +3,7 @@ package main_test
 import (
 	//"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -31,7 +32,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAuthorizePage(t *testing.T) {
-	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 	response := executeRequest(req)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -156,6 +157,32 @@ func TestCreateTokenWithRefreshToken(t *testing.T) {
 	if m["refresh_token_expires_in"] != float64(2628288) {
 		t.Errorf("Expected 'refresh_token_expires_in' to be 2628288. Got %v", m["refresh_token_expires_in"])
 	}
+}
+
+func TestUserInfo(t *testing.T) {
+	subscriberId := "subscriber1"
+	countryCode := "AR"
+	u := main.UserAccount{Username: "user1@example.com", Password: "secret", Country: countryCode, SubscriberId: subscriberId}
+	u.CreateUserAccount(a.DB)
+	c := main.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c.CreateClient(a.DB)
+	tk := main.Token{ClientId: c.ID, UserAccountId: u.ID}
+	tk.CreateToken(a.DB)
+
+	req, _ := http.NewRequest(http.MethodGet, "/userinfo", nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tk.AccessToken))
+	req.Header.Set("Accept", "application/json")
+	response := executeRequest(req)
+
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+	if m["subscriber_id"] != subscriberId {
+		t.Errorf("Expected 'subscriber_id' to be '%v'. Got %v", subscriberId, m["subscriber_id"])
+	}
+	if m["country_code"] != countryCode {
+		t.Errorf("Expected 'country_code' to be '%v'. Got %v", countryCode, m["country_code"])
+	}
+	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
 func executeRequest(req *http.Request) *httptest.ResponseRecorder {
