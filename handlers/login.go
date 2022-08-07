@@ -32,7 +32,6 @@ type LoginResponseDTO struct {
 }
 
 func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
-
 	err := r.ParseForm()
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-PARSE-FORM-ERROR", err.Error())
@@ -43,9 +42,13 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	c := data.Client{ClientId: loginRequest.ClientId}
 	err = c.GetByClientId(lh.DB)
-	// add correct error validation with client_id not found message
 	if err != nil {
-		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-INVALID-CLIENT-ID", err.Error())
+		switch err {
+		case sql.ErrNoRows:
+			helpers.RespondWithError(w, http.StatusBadRequest, "LOGIN-INVALID-CLIENT-ID", "Client Id not found")
+		default:
+			helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-CLIENT-ID-FAILED", err.Error())
+		}
 		return
 	}
 	if c.RedirectUri != loginRequest.RedirectUri {
@@ -55,9 +58,13 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	u := data.UserAccount{Username: loginRequest.Username, Country: loginRequest.Country}
 	err = u.GetByUsernameAndCountry(lh.DB)
-	// add correct error validation with username with country not found message
 	if err != nil {
-		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-INVALID-USERNAME-OR-COUNTRY", err.Error())
+		switch err {
+		case sql.ErrNoRows:
+			helpers.RespondWithError(w, http.StatusBadRequest, "LOGIN-INVALID-USERNAME-OR-COUNTRY", "Username and country combination not found")
+		default:
+			helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-USERNAME-OR-COUNTRY-FAILED", err.Error())
+		}
 		return
 	}
 
