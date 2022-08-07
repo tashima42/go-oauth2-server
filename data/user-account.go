@@ -30,16 +30,16 @@ func (u *UserAccount) CreateUserAccount(db *sql.DB) error {
 	).Scan(&u.ID)
 }
 
-func (u *UserAccount) GetByUsernameAndCountry(db *sql.DB, username string, country string) error {
+func (u *UserAccount) GetByUsernameAndCountry(db *sql.DB) error {
 	return db.QueryRow(
 		"SELECT id, username, password, country, subscriber_id FROM user_accounts WHERE username=$1 AND country=$2 LIMIT 1;",
-		username, country,
+		u.Username, u.Country,
 	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
 }
 
-func (u *UserAccount) GetById(db *sql.DB, id int) error {
+func (u *UserAccount) GetById(db *sql.DB) error {
 	return db.QueryRow(
 		"SELECT id, username, password, country, subscriber_id FROM user_accounts WHERE id=$1 LIMIT 1;",
-		id,
+		u.ID,
 	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
 }

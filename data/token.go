@@ -35,12 +35,12 @@ func (t *Token) CreateToken(db *sql.DB) error {
 	).Scan(&t.ID)
 }
 
-func (t *Token) GetByRefreshToken(db *sql.DB, refreshToken string) error {
+func (t *Token) GetByRefreshToken(db *sql.DB) error {
 	var accessTokenExpiresAt string
 	var refreshTokenExpiresAt string
 	err := db.QueryRow(
 		"SELECT id, access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id, active FROM tokens WHERE refresh_token=$1 LIMIT 1;",
-		refreshToken,
+		t.RefreshToken,
 	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientId, &t.UserAccountId, &t.Active)
 	if err != nil {
 		return err
@@ -56,12 +56,12 @@ func (t *Token) GetByRefreshToken(db *sql.DB, refreshToken string) error {
 	return nil
 }
 
-func (t *Token) GetByAccessToken(db *sql.DB, accessToken string) error {
+func (t *Token) GetByAccessToken(db *sql.DB) error {
 	var accessTokenExpiresAt string
 	var refreshTokenExpiresAt string
 	err := db.QueryRow(
 		"SELECT id, access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id, active FROM tokens WHERE access_token=$1 LIMIT 1;",
-		accessToken,
+		t.AccessToken,
 	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientId, &t.UserAccountId, &t.Active)
 	if err != nil {
 		return err

@@ -25,15 +25,15 @@ func (uh *UserInfoHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
 	splitToken := strings.Split(accessToken, "Bearer ")
 	accessToken = splitToken[1]
 
-	t := data.Token{}
-	err := t.GetByAccessToken(uh.DB, accessToken)
+	t := data.Token{AccessToken: accessToken}
+	err := t.GetByAccessToken(uh.DB)
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "USERINFO-INVALID-ACCESS-TOKEN", err.Error())
 		return
 	}
 
-	u := data.UserAccount{}
-	err = u.GetById(uh.DB, t.UserAccountId)
+	u := data.UserAccount{ID: t.UserAccountId}
+	err = u.GetById(uh.DB)
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "USERINFO-FAILED-GET-USER", err.Error())
 		return

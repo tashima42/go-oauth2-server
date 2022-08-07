@@ -41,8 +41,8 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var loginRequest LoginRequestDTO
 	helpers.Decoder.Decode(&loginRequest, r.PostForm)
 
-	var c data.Client
-	err = c.GetByClientId(lh.DB, loginRequest.ClientId)
+	c := data.Client{ClientId: loginRequest.ClientId}
+	err = c.GetByClientId(lh.DB)
 	// add correct error validation with client_id not found message
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-INVALID-CLIENT-ID", err.Error())
@@ -53,8 +53,8 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var u data.UserAccount
-	err = u.GetByUsernameAndCountry(lh.DB, loginRequest.Username, loginRequest.Country)
+	u := data.UserAccount{Username: loginRequest.Username, Country: loginRequest.Country}
+	err = u.GetByUsernameAndCountry(lh.DB)
 	// add correct error validation with username with country not found message
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-INVALID-USERNAME-OR-COUNTRY", err.Error())

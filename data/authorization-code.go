@@ -31,11 +31,11 @@ func (ac *AuthorizationCode) CreateAuthorizationCode(db *sql.DB) error {
 	).Scan(&ac.ID)
 }
 
-func (ac *AuthorizationCode) GetByCode(db *sql.DB, code string) error {
+func (ac *AuthorizationCode) GetByCode(db *sql.DB) error {
 	var expiresAt string
 	err := db.QueryRow(
 		"SELECT id, code, expires_at, redirect_uri,client_id, user_account_id, active FROM authorization_codes WHERE code=$1 LIMIT 1;",
-		code,
+		ac.Code,
 	).Scan(&ac.ID, &ac.Code, &expiresAt, &ac.RedirectUri, &ac.ClientId, &ac.UserAccountId, &ac.Active)
 	if err != nil {
 		return err

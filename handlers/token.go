@@ -38,8 +38,8 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 	var tokenRequest TokenRequestDTO
 	helpers.Decoder.Decode(&tokenRequest, r.PostForm)
 
-	var c data.Client
-	err = c.GetByClientId(th.DB, tokenRequest.ClientId)
+	c := data.Client{ClientId: tokenRequest.ClientId}
+	err = c.GetByClientId(th.DB)
 
 	// add correct error validation with client_id not found message
 	if err != nil {
@@ -48,8 +48,8 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 	}
 	var userAccountId int
 	if tokenRequest.GrantType == "authorization_code" {
-		var ac data.AuthorizationCode
-		err = ac.GetByCode(th.DB, tokenRequest.Code)
+		ac := data.AuthorizationCode{Code: tokenRequest.Code}
+		err = ac.GetByCode(th.DB)
 		// add correct error validation with client_id not found message
 		if err != nil {
 			helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-INVALID-AUTHORIZATION-CODE", err.Error())
@@ -62,8 +62,8 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 		}
 		userAccountId = ac.UserAccountId
 	} else if tokenRequest.GrantType == "refresh_token" {
-		var t data.Token
-		err = t.GetByRefreshToken(th.DB, tokenRequest.RefreshToken)
+		t := data.Token{RefreshToken: tokenRequest.RefreshToken}
+		err = t.GetByRefreshToken(th.DB)
 		if err != nil {
 			helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-INVALID-REFRESH-TOKEN", err.Error())
 			return

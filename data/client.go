@@ -22,9 +22,9 @@ func (c *Client) CreateClient(db *sql.DB) error {
 	).Scan(&c.ID)
 }
 
-func (c *Client) GetByClientId(db *sql.DB, clientId string) error {
+func (c *Client) GetByClientId(db *sql.DB) error {
 	return db.QueryRow(
 		"SELECT id, name, client_id, client_secret, redirect_uri FROM clients WHERE client_id=$1 LIMIT 1;",
-		clientId,
+		c.ClientId,
 	).Scan(&c.ID, &c.Name, &c.ClientId, &c.ClientSecret, &c.RedirectUri)
 }
