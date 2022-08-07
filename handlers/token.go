@@ -96,6 +96,9 @@ func (th *TokenHandler) authorizationCodeGrant(tokenRequest TokenRequestDTO, use
 	if err != nil {
 		return errors.New(err.Error())
 	}
+	if !ac.Active {
+		return errors.New("authorization code is not active")
+	}
 	err = ac.Disable(th.DB)
 	if err != nil {
 		return errors.New(err.Error())
@@ -109,6 +112,9 @@ func (th *TokenHandler) refreshTokenGrant(tokenRequest TokenRequestDTO, userAcco
 	err := t.GetByRefreshToken(th.DB)
 	if err != nil {
 		return errors.New(err.Error())
+	}
+	if !t.Active {
+		return errors.New("refresh token is not active")
 	}
 	err = t.Disable(th.DB)
 	if err != nil {
