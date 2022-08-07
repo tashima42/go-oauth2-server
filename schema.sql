@@ -39,3 +39,23 @@ CREATE TABLE IF NOT EXISTS authorization_codes(
   FOREIGN KEY (client_id) REFERENCES clients (id),
   FOREIGN KEY (user_account_id) REFERENCES user_accounts (id)
 );
+
+INSERT INTO
+  clients (name, client_id, client_secret, redirect_uri)
+VALUES
+  (
+    'client name',
+    'client1',
+    '$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO',
+    'https://sp-dev.tbxnet.com/v2/auth/oauth2/assert'
+  );
+
+INSERT INTO
+  user_accounts (username, password, country, subscriber_id)
+VALUES
+  (
+    'user1@example.com',
+    '$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO',
+    'AR',
+    'subscriber1'
+  );
