@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -12,5 +13,5 @@ func main() {
 		os.Getenv("APP_DB_NAME"),
 	)
 
-	a.Run(":8010")
+	a.Run(fmt.Sprintf(":%s", os.Getenv("APP_PORT")))
 }
