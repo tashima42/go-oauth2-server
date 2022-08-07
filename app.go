@@ -27,11 +27,15 @@ func (a *App) Initialize(user, password, dbname string) {
 
 	a.Router = mux.NewRouter()
 
+	// add parameter validation
+
 	loginHandler := handlers.LoginHandler{DB: a.DB}
 	tokenHandler := handlers.TokenHandler{DB: a.DB}
 	userInfoHandler := handlers.UserInfoHandler{DB: a.DB}
+	// TODO: maybe add client validator middlware
 	a.Router.HandleFunc("/auth/login", loginHandler.Login).Methods("POST")
 	a.Router.HandleFunc("/auth/token", tokenHandler.Token).Methods("POST")
+	// TODO: add user authorization middleware
 	a.Router.HandleFunc("/userinfo", userInfoHandler.UserInfo).Methods("GET")
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/views/")))
 }

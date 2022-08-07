@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/tashima42/go-oauth2-server/data"
+	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 var a App
@@ -43,7 +44,7 @@ func TestLogin(t *testing.T) {
 	password := "secret"
 	u := data.UserAccount{Username: "user1@example.com", Password: password, Country: "AR", SubscriberId: "subscriber1"}
 	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
 
 	state := "currentstate"
@@ -84,14 +85,14 @@ func TestCreateTokenWithAuthorizationCode(t *testing.T) {
 
 	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
 	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
 	ac := data.AuthorizationCode{ClientId: c.ID, RedirectUri: c.RedirectUri, UserAccountId: u.ID}
 	ac.CreateAuthorizationCode(a.DB)
 
 	data := url.Values{}
 	data.Set("client_id", c.ClientId)
-	data.Set("client_secret", c.ClientSecret)
+	data.Set("client_secret", "secret")
 	data.Set("code", ac.Code)
 	data.Set("redirect_uri", ac.RedirectUri)
 	data.Set("grant_type", "authorization_code")
@@ -111,11 +112,11 @@ func TestCreateTokenWithAuthorizationCode(t *testing.T) {
 	if m["token_type"] != "Bearer" {
 		t.Errorf("Expected 'token_type' to be Bearer. Got %v", m["token_type"])
 	}
-	if m["expires_in"] != float64(86400) {
-		t.Errorf("Expected 'expires_in' to be 86400. Got %v", m["expires_in"])
+	if m["expires_in"] != float64(helpers.AccessTokenExpiration) {
+		t.Errorf("Expected 'expires_in' to be %v. Got %v", helpers.AccessTokenExpiration, m["expires_in"])
 	}
-	if m["refresh_token_expires_in"] != float64(2628288) {
-		t.Errorf("Expected 'refresh_token_expires_in' to be 2628288. Got %v", m["refresh_token_expires_in"])
+	if m["refresh_token_expires_in"] != float64(helpers.RefreshTokenExpiration) {
+		t.Errorf("Expected 'refresh_token_expires_in' to be %v. Got %v", helpers.RefreshTokenExpiration, m["refresh_token_expires_in"])
 	}
 }
 
@@ -124,14 +125,14 @@ func TestCreateTokenWithRefreshToken(t *testing.T) {
 
 	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
 	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
 	tk := data.Token{ClientId: c.ID, UserAccountId: u.ID}
 	tk.CreateToken(a.DB)
 
 	data := url.Values{}
 	data.Set("client_id", c.ClientId)
-	data.Set("client_secret", c.ClientSecret)
+	data.Set("client_secret", "secret")
 	data.Set("refresh_token", tk.RefreshToken)
 	data.Set("grant_type", "refresh_token")
 
@@ -150,10 +151,10 @@ func TestCreateTokenWithRefreshToken(t *testing.T) {
 	if m["token_type"] != "Bearer" {
 		t.Errorf("Expected 'token_type' to be Bearer. Got %v", m["token_type"])
 	}
-	if m["expires_in"] != float64(86400) {
+	if m["expires_in"] != float64(helpers.AccessTokenExpiration) {
 		t.Errorf("Expected 'expires_in' to be 86400. Got %v", m["expires_in"])
 	}
-	if m["refresh_token_expires_in"] != float64(2628288) {
+	if m["refresh_token_expires_in"] != float64(helpers.RefreshTokenExpiration) {
 		t.Errorf("Expected 'refresh_token_expires_in' to be 2628288. Got %v", m["refresh_token_expires_in"])
 	}
 }
@@ -165,7 +166,7 @@ func TestUserInfo(t *testing.T) {
 	countryCode := "AR"
 	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: countryCode, SubscriberId: subscriberId}
 	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "secret", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
+	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
 	c.CreateClient(a.DB)
 	tk := data.Token{ClientId: c.ID, UserAccountId: u.ID}
 	tk.CreateToken(a.DB)
