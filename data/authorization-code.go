@@ -18,7 +18,7 @@ type AuthorizationCode struct {
 }
 
 func (ac *AuthorizationCode) CreateAuthorizationCode(db *sql.DB) error {
-	ac.Code = helpers.RandStringBytes(128)
+	ac.Code = helpers.GenerateSecureToken(64)
 	ac.expiresAt = helpers.NowPlusSeconds(86400)
 
 	return db.QueryRow(

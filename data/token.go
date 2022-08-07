@@ -19,8 +19,8 @@ type Token struct {
 }
 
 func (t *Token) CreateToken(db *sql.DB) error {
-	t.AccessToken = helpers.RandStringBytes(128)
-	t.RefreshToken = helpers.RandStringBytes(128)
+	t.AccessToken = helpers.GenerateSecureToken(64)
+	t.RefreshToken = helpers.GenerateSecureToken(64)
 	t.AccessTokenExpiresAt = helpers.NowPlusSeconds(86400)
 	t.RefreshTokenExpiresAt = helpers.NowPlusSeconds(2628288)
 
@@ -75,4 +75,9 @@ func (t *Token) GetByAccessToken(db *sql.DB) error {
 		return err
 	}
 	return nil
+}
+
+func (t *Token) Disable(db *sql.DB) error {
+	_, err := db.Exec("UPDATE tokens SET active=false WHERE id=$1;", t.ID)
+	return err
 }
