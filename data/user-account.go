@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,6 +19,7 @@ func (u *UserAccount) CreateUserAccount(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+
 	u.Password = string(password)
 	return db.QueryRow(
 		"INSERT INTO user_accounts(username, password, country, subscriber_id) VALUES($1, $2, $3, $4) RETURNING id;",
