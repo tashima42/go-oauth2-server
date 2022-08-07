@@ -41,17 +41,14 @@ func TestAuthorizePage(t *testing.T) {
 func TestLogin(t *testing.T) {
 	clearTable()
 
-	password := "secret"
-	u := data.UserAccount{Username: "user1@example.com", Password: password, Country: "AR", SubscriberId: "subscriber1"}
-	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
-	c.CreateClient(a.DB)
+	u := populateDatabaseWithUserAccount()
+	c := populateDatabaseWithClient()
 
 	state := "currentstate"
 
 	data := url.Values{}
 	data.Set("username", u.Username)
-	data.Set("password", password)
+	data.Set("password", "secret")
 	data.Set("country", u.Country)
 	data.Set("redirect_uri", c.RedirectUri)
 	data.Set("state", state)
@@ -83,11 +80,16 @@ func TestLogin(t *testing.T) {
 func TestCreateTokenWithAuthorizationCode(t *testing.T) {
 	clearTable()
 
-	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
-	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
-	c.CreateClient(a.DB)
-	ac := data.AuthorizationCode{ClientId: c.ID, RedirectUri: c.RedirectUri, UserAccountId: u.ID}
+	u := populateDatabaseWithUserAccount()
+	c := populateDatabaseWithClient()
+	ac := data.AuthorizationCode{
+		ClientId:      c.ID,
+		RedirectUri:   c.RedirectUri,
+		UserAccountId: u.ID,
+		Code:          helpers.GenerateRandomString(64),
+		ExpiresAt:     helpers.NowPlusSeconds(helpers.AuthorizationCodeExpiration),
+	}
+
 	ac.CreateAuthorizationCode(a.DB)
 
 	data := url.Values{}
@@ -123,11 +125,16 @@ func TestCreateTokenWithAuthorizationCode(t *testing.T) {
 func TestCreateTokenWithRefreshToken(t *testing.T) {
 	clearTable()
 
-	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: "AR", SubscriberId: "subscriber1"}
-	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
-	c.CreateClient(a.DB)
-	tk := data.Token{ClientId: c.ID, UserAccountId: u.ID}
+	u := populateDatabaseWithUserAccount()
+	c := populateDatabaseWithClient()
+	tk := data.Token{
+		ClientId:              c.ID,
+		UserAccountId:         u.ID,
+		AccessToken:           helpers.GenerateRandomString(64),
+		RefreshToken:          helpers.GenerateRandomString(64),
+		AccessTokenExpiresAt:  helpers.NowPlusSeconds(helpers.AccessTokenExpiration),
+		RefreshTokenExpiresAt: helpers.NowPlusSeconds(helpers.RefreshTokenExpiration),
+	}
 	tk.CreateToken(a.DB)
 
 	data := url.Values{}
@@ -162,13 +169,17 @@ func TestCreateTokenWithRefreshToken(t *testing.T) {
 func TestUserInfo(t *testing.T) {
 	clearTable()
 
-	subscriberId := "subscriber1"
-	countryCode := "AR"
-	u := data.UserAccount{Username: "user1@example.com", Password: "secret", Country: countryCode, SubscriberId: subscriberId}
-	u.CreateUserAccount(a.DB)
-	c := data.Client{Name: "client name", ClientId: "client1", ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO", RedirectUri: "https://tashima42.github.io/tbx-local-dummy/"}
-	c.CreateClient(a.DB)
-	tk := data.Token{ClientId: c.ID, UserAccountId: u.ID}
+	u := populateDatabaseWithUserAccount()
+	c := populateDatabaseWithClient()
+
+	tk := data.Token{
+		ClientId:              c.ID,
+		UserAccountId:         u.ID,
+		AccessToken:           helpers.GenerateRandomString(64),
+		RefreshToken:          helpers.GenerateRandomString(64),
+		AccessTokenExpiresAt:  helpers.NowPlusSeconds(helpers.AccessTokenExpiration),
+		RefreshTokenExpiresAt: helpers.NowPlusSeconds(helpers.RefreshTokenExpiration),
+	}
 	tk.CreateToken(a.DB)
 
 	req, _ := http.NewRequest(http.MethodGet, "/userinfo", nil)
@@ -178,11 +189,11 @@ func TestUserInfo(t *testing.T) {
 
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if m["subscriber_id"] != subscriberId {
-		t.Errorf("Expected 'subscriber_id' to be '%v'. Got %v", subscriberId, m["subscriber_id"])
+	if m["subscriber_id"] != "subscriber1" {
+		t.Errorf("Expected 'subscriber_id' to be 'subscriber1'. Got %v", m["subscriber_id"])
 	}
-	if m["country_code"] != countryCode {
-		t.Errorf("Expected 'country_code' to be '%v'. Got %v", countryCode, m["country_code"])
+	if m["country_code"] != "AR" {
+		t.Errorf("Expected 'country_code' to be 'AR'. Got %v", m["country_code"])
 	}
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
@@ -217,4 +228,25 @@ func clearTable() {
 	a.DB.Exec("ALTER SEQUENCE tokens_id_seq RESTART WITH 1")
 	a.DB.Exec("ALTER SEQUENCE clients_id_seq RESTART WITH 1")
 	a.DB.Exec("ALTER SEQUENCE user_accounts_id_seq RESTART WITH 1")
+}
+
+func populateDatabaseWithUserAccount() data.UserAccount {
+	uc := data.UserAccount{
+		Username:     "user1@example.com",
+		Password:     "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO",
+		Country:      "AR",
+		SubscriberId: "subscriber1",
+	}
+	uc.CreateUserAccount(a.DB)
+	return uc
+}
+func populateDatabaseWithClient() data.Client {
+	c := data.Client{
+		Name:         "client name",
+		ClientId:     "client1",
+		ClientSecret: "$2b$10$P9PjYWou7PU.pDA3sx3DwuW1ny902LV13LVZsZGHlahuOUbsOPuBO",
+		RedirectUri:  "https://tashima42.github.io/tbx-local-dummy/",
+	}
+	c.CreateClient(a.DB)
+	return c
 }

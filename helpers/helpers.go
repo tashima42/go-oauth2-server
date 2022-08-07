@@ -14,7 +14,7 @@ func NowPlusSeconds(seconds int) time.Time {
 	return time.Now().Local().Add(time.Second * time.Duration(seconds))
 }
 
-func GenerateSecureToken(length int) string {
+func GenerateRandomString(length int) string {
 	rand.Seed(time.Now().UnixNano())
 	bytes := make([]byte, length)
 	for i := 0; i < length; i++ {

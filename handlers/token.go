@@ -71,8 +71,14 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	token := data.Token{ClientId: c.ID, UserAccountId: userAccountId}
-	// TODO: take out token generation and expiration from data
+	token := data.Token{
+		ClientId:              c.ID,
+		UserAccountId:         userAccountId,
+		AccessToken:           helpers.GenerateRandomString(64),
+		RefreshToken:          helpers.GenerateRandomString(64),
+		AccessTokenExpiresAt:  helpers.NowPlusSeconds(helpers.AccessTokenExpiration),
+		RefreshTokenExpiresAt: helpers.NowPlusSeconds(helpers.RefreshTokenExpiration),
+	}
 	err = token.CreateToken(th.DB)
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-FAILED-TO-CREATE-TOKEN", err.Error())
@@ -94,14 +100,19 @@ func (th *TokenHandler) authorizationCodeGrant(tokenRequest TokenRequestDTO, use
 	ac := data.AuthorizationCode{Code: tokenRequest.Code}
 	err := ac.GetByCode(th.DB)
 	if err != nil {
-		return errors.New(err.Error())
+		switch err {
+		case sql.ErrNoRows:
+			return errors.New("authorization code not found")
+		default:
+			return errors.New("failed to get authorization code")
+		}
 	}
 	if !ac.Active {
 		return errors.New("authorization code is not active")
 	}
 	err = ac.Disable(th.DB)
 	if err != nil {
-		return errors.New(err.Error())
+		return errors.New("failed to disable authorization code")
 	}
 	*userAccountId = ac.UserAccountId
 	return nil
@@ -111,14 +122,19 @@ func (th *TokenHandler) refreshTokenGrant(tokenRequest TokenRequestDTO, userAcco
 	t := data.Token{RefreshToken: tokenRequest.RefreshToken}
 	err := t.GetByRefreshToken(th.DB)
 	if err != nil {
-		return errors.New(err.Error())
+		switch err {
+		case sql.ErrNoRows:
+			return errors.New("authorization code not found")
+		default:
+			return errors.New("failed to get authorization code")
+		}
 	}
 	if !t.Active {
 		return errors.New("refresh token is not active")
 	}
 	err = t.Disable(th.DB)
 	if err != nil {
-		return errors.New(err.Error())
+		return errors.New("failed to disable refresh token")
 	}
 	*userAccountId = t.UserAccountId
 	return nil

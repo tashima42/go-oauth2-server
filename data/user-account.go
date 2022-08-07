@@ -2,8 +2,6 @@ package data
 
 import (
 	"database/sql"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserAccount struct {
@@ -15,12 +13,6 @@ type UserAccount struct {
 }
 
 func (u *UserAccount) CreateUserAccount(db *sql.DB) error {
-	password, err := bcrypt.GenerateFromPassword([]byte(u.Password), 10)
-	if err != nil {
-		return err
-	}
-
-	u.Password = string(password)
 	return db.QueryRow(
 		"INSERT INTO user_accounts(username, password, country, subscriber_id) VALUES($1, $2, $3, $4) RETURNING id;",
 		u.Username,

@@ -19,11 +19,6 @@ type Token struct {
 }
 
 func (t *Token) CreateToken(db *sql.DB) error {
-	t.AccessToken = helpers.GenerateSecureToken(64)
-	t.RefreshToken = helpers.GenerateSecureToken(64)
-	t.AccessTokenExpiresAt = helpers.NowPlusSeconds(86400)
-	t.RefreshTokenExpiresAt = helpers.NowPlusSeconds(2628288)
-
 	return db.QueryRow(
 		"INSERT INTO tokens(access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING id;",
 		t.AccessToken,

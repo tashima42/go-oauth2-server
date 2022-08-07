@@ -73,7 +73,13 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ac := data.AuthorizationCode{RedirectUri: loginRequest.RedirectUri, ClientId: c.ID, UserAccountId: u.ID}
+	ac := data.AuthorizationCode{
+		RedirectUri:   loginRequest.RedirectUri,
+		ClientId:      c.ID,
+		UserAccountId: u.ID,
+		Code:          helpers.GenerateRandomString(64),
+		ExpiresAt:     helpers.NowPlusSeconds(helpers.AuthorizationCodeExpiration),
+	}
 	err = ac.CreateAuthorizationCode(lh.DB)
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-FAILED-CREATE-AUTHORIZATION-CODE", err.Error())
