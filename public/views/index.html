@@ -25,6 +25,14 @@
     height: 550px;
   }
 
+  .blur {
+    -webkit-filter: blur(2px);
+    -moz-filter: blur(2px);
+    -o-filter: blur(2px);
+    -ms-filter: blur(2px);
+    filter: blur(2px);
+  }
+
   .login-title {
     text-align: center;
     font-size: 50px;
@@ -111,27 +119,65 @@
     display: flex;
   }
 
+  .modal {
+    position: absolute;
+    margin-top: 150px;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 50px 20px 50px;
+    width: auto;
+    height: auto;
+    overflow: auto;
+    background-color: #1A2226;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+  }
+
+  .modal-title {
+    text-align: center;
+    font-size: 30px;
+    letter-spacing: 2px;
+    margin-top: 0px;
+    font-weight: bold;
+    color: white;
+  }
+
+  .modal-content {
+    color: white;
+  }
+
+  .modal-button {
+    margin-bottom: 10px;
+  }
+
   @media (max-width: 700px) {
     html {
       height: 100%;
     }
+
     body {
       height: 100%;
     }
+
     .login-box {
       width: 90%;
     }
   }
+
   @media (max-width: 500px) {
     .github-icon {
       width: 100px;
     }
+
     .login-title {
       font-size: 20px;
     }
+
     .login-box {
       height: 450px;
     }
+
     .form-group {
       width: 95%;
     }
@@ -190,6 +236,15 @@
       </div>
     </div>
   </div>
+  <!-- modal -->
+  <div id="modal" class="modal">
+    <h3 class="modal-title"></h3>
+    <div class="modal-content">
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn modal-button" onclick="closeModal()">Close</button>
+    </div>
+  </div>
   <script>
     function authorize() {
       const params = getUrlParams()
@@ -207,8 +262,18 @@
             if (body.success === true) {
               const redirectTo = `${body.redirect_uri}?code=${body.code}&state=${body.state}`
               window.location.href = redirectTo
+            } else if (body.errorCode === "LOGIN-INVALID-REDIRECT-URI") {
+              showModal("Attention!", "<p>The redirect uri is invalid, this could be an attack!</p><br><p>Please verify the autenticity of the website that redirected you here.</p>")
+            } else if (body.errorCode === "LOGIN-INVALID-PASSWORD") {
+              showModal("Oops", "<p>Invalid <b>username or password</b>. Please try again.</p>")
+            } else {
+              showModal("Oops", "<p>Something went wrong. Please try again.</p>")
             }
           })
+        })
+        .catch(error => {
+          console.error('Error:', error)
+          showModal("Oops", "<p>Something went wrong. Please try again.</p>")
         })
     }
     function getUrlParams() {
@@ -229,6 +294,23 @@
         document.body.querySelectorAll('.auth').forEach(el => el.classList.add('is-invalid'))
       }
       return params
+    }
+
+    var loginBox = document.getElementsByClassName("login-box")[0];
+    var modal = document.getElementById("modal");
+    var modalTitle = document.getElementsByClassName("modal-title")[0];
+    var modalContent = document.getElementsByClassName("modal-content")[0];
+
+    function showModal(title, content) {
+      modal.style.display = "flex";
+      loginBox.classList.add("blur");
+
+      modalTitle.innerHTML = title;
+      modalContent.innerHTML = content;
+    }
+    function closeModal() {
+      modal.style.display = "none";
+      loginBox.classList.toggle("blur");
     }
   </script>
 </body>
