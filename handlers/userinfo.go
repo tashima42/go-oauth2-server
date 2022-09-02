@@ -19,8 +19,19 @@ type UserInfoResponseDTO struct {
 	CountryCode  string `json:"country_code"`
 }
 
-func (uh *UserInfoHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
+type AuthorizeResponseDTO struct {
+	Access bool   `json:"access"`
+	Rating string `json:"rating"`
+	Ttl    int    `json:"ttl"`
+}
 
+type InvalidUserResponse struct {
+	Access       bool   `json:"access"`
+	ErrorCode    string `json:"errorCode"`
+	ErrorMessage string `json:"errorMessage"`
+}
+
+func (uh *UserInfoHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
 	accessToken := r.Header.Get("Authorization")
 	splitToken := strings.Split(accessToken, "Bearer ")
 	accessToken = splitToken[1]
@@ -41,4 +52,32 @@ func (uh *UserInfoHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
 
 	userInfoResponse := UserInfoResponseDTO{Success: true, SubscriberId: u.SubscriberId, CountryCode: u.Country}
 	helpers.RespondWithJSON(w, http.StatusOK, userInfoResponse)
+}
+
+func (uh *UserInfoHandler) Authorize(w http.ResponseWriter, r *http.Request) {
+	resourceId := r.URL.Query().Get("resource_id")
+	subscriberId := r.URL.Query().Get("subscriber_id")
+
+	if resourceId != "urn:tve:paramountplus" && resourceId != "urn:tve:starzbasic" {
+		invalidUserResponse := InvalidUserResponse{Access: false, ErrorCode: "AUTHORIZATION-INVALID-RESOURCE-ID", ErrorMessage: "Invalid resource_id"}
+		helpers.RespondWithJSON(w, http.StatusBadRequest, invalidUserResponse)
+		return
+	}
+
+	u := data.UserAccount{SubscriberId: subscriberId}
+	err := u.GetBySubscriberId(uh.DB)
+	if err != nil {
+		invalidUserResponse := InvalidUserResponse{Access: false, ErrorCode: "AUTHORIZATION-INVALID-SUBSCRIBER-ID", ErrorMessage: "Invalid subscriber_id"}
+		helpers.RespondWithJSON(w, http.StatusBadRequest, invalidUserResponse)
+		return
+	}
+
+	access := true
+
+	if resourceId == "urn:tve:starzbasic" {
+		access = false
+	}
+
+	authorizeResponse := AuthorizeResponseDTO{Access: access, Rating: "G", Ttl: 3600}
+	helpers.RespondWithJSON(w, http.StatusOK, authorizeResponse)
 }

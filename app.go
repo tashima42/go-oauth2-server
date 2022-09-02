@@ -37,6 +37,10 @@ func (a *App) Initialize(user, password, dbname string) {
 	a.Router.HandleFunc("/auth/token", tokenHandler.Token).Methods("POST")
 	// TODO: add user authorization middleware
 	a.Router.HandleFunc("/userinfo", userInfoHandler.UserInfo).Methods("GET")
+	a.Router.HandleFunc("/custom/login", loginHandler.LoginCustom).Methods("GET")
+
+	a.Router.HandleFunc("/authorize", userInfoHandler.Authorize).Methods("GET")
+
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/views/")))
 }
 

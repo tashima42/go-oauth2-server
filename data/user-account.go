@@ -35,3 +35,17 @@ func (u *UserAccount) GetById(db *sql.DB) error {
 		u.ID,
 	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
 }
+
+func (u *UserAccount) GetByUsername(db *sql.DB) error {
+	return db.QueryRow(
+		"SELECT id, username, password, country, subscriber_id FROM user_accounts WHERE username=$1 LIMIT 1;",
+		u.Username,
+	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
+}
+
+func (u *UserAccount) GetBySubscriberId(db *sql.DB) error {
+	return db.QueryRow(
+		"SELECT id, username, password, country, subscriber_id FROM user_accounts WHERE subscriber_id=$1 LIMIT 1;",
+		u.SubscriberId,
+	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
+}

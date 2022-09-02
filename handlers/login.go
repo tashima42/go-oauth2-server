@@ -90,3 +90,29 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	helpers.RespondWithJSON(w, http.StatusOK, loginResponse)
 }
+
+func (lh *LoginHandler) LoginCustom(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("username")
+	password := r.URL.Query().Get("password")
+
+	u := data.UserAccount{Username: username}
+	err := u.GetByUsername(lh.DB)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			helpers.RespondWithError(w, http.StatusBadRequest, "LOGIN-INVALID-USERNAME-OR-COUNTRY", "Username and country combination not found")
+		default:
+			helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-USERNAME-OR-COUNTRY-FAILED", err.Error())
+		}
+		return
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)) != nil {
+		helpers.RespondWithError(w, http.StatusUnauthorized, "LOGIN-INVALID-PASSWORD", "invalid password")
+		return
+	}
+
+	userInfoResponse := UserInfoResponseDTO{Success: true, SubscriberId: u.SubscriberId, CountryCode: u.Country}
+
+	helpers.RespondWithJSON(w, http.StatusOK, userInfoResponse)
+}
