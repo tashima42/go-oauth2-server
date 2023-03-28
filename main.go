@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
+	"github.com/tashima42/go-oauth2-server/helpers/jwt"
 )
 
 func main() {
@@ -22,7 +23,7 @@ func main() {
 			if err != nil {
 				return errors.Wrap(err, "failed to open database")
 			}
-			jwtHelper, err := helpers.NewJWTHelperFromENV()
+			jwtHelper, err := jwt.NewJWTHelperFromENV()
 			if err != nil {
 				return errors.Wrap(err, "failed to create jwt helper")
 			}

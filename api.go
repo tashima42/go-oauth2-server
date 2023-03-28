@@ -8,9 +8,10 @@ import (
 	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/handlers"
 	"github.com/tashima42/go-oauth2-server/helpers"
+	"github.com/tashima42/go-oauth2-server/helpers/jwt"
 )
 
-func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *helpers.JWTHelper) {
+func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelper) {
 	handler := handlers.NewHandler(repo, hashHelper, jwtHelper)
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
@@ -18,13 +19,10 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *helpers.JWT
 
 	router.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
 
-	// router.POST("/auth/login", handler.Login)
-	// router.POST("/auth/token", handler.Token)
+	router.POST("/auth/login", handler.Login)
+	router.POST("/auth/token", handler.Token)
 	// // TODO: add user authorization middleware
 	// router.GET("/userinfo", handler.UserInfo)
-	// router.GET("/custom/login", handler.LoginCustom)
-
-	// router.GET("/authorize", handler.Authorize)
 
 	// router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/views/")))
 	router.Run(":8096")

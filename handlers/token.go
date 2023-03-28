@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"database/sql"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
 )
@@ -37,6 +37,9 @@ func (h *Handler) Token(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-TRANSACTION-ERROR"})
 	}
 	client, err := h.repo.GetClientByClientIDTxx(tx, tokenRequest.ClientId)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GET-CLIENT"})
+	}
 	if matches, err := h.hashHelper.Verify(client.ClientSecret, tokenRequest.ClientSecret); err != nil || !matches {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Client Secret", "errorCode": "TOKEN-INVALID-CLIENT-SECRET"})
 	}
@@ -48,13 +51,11 @@ func (h *Handler) Token(c *gin.Context) {
 		if err != nil || userAccountID == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-AUTHORIZATION-CODE"})
 		}
-		break
-	// case string(helpers.RefreshTokenGrantType):
-	// 	userAccountID, err = h.refreshTokenGrant(tokenRequest)
-	// 	if err != nil {
-	// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-REFRESH-TOKEN"})
-	// 	}
-	// 	break
+	case string(helpers.RefreshTokenGrantType):
+		userAccountID, err = h.refreshTokenGrant(tokenRequest)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-REFRESH-TOKEN"})
+		}
 	default:
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid Grant Type", "errorCode": "TOKEN-INVALID-GRANT-TYPE"})
 	}
@@ -111,25 +112,10 @@ func (h *Handler) authorizationCodeGrant(tx *sqlx.Tx, tokenRequest TokenRequest)
 	return &authorizationCode.UserAccountID, nil
 }
 
-// TODO: use JWT
-// func (h *Handler) refreshTokenGrant(tokenRequest TokenRequest) (userAccountID int, err error) {
-// 	t := db.Token{RefreshToken: tokenRequest.RefreshToken}
-// 	err := t.GetByRefreshToken(th.DB)
-// 	if err != nil {
-// 		switch err {
-// 		case sql.ErrNoRows:
-// 			return errors.New("authorization code not found")
-// 		default:
-// 			return errors.New("failed to get authorization code")
-// 		}
-// 	}
-// 	if !t.Active {
-// 		return errors.New("refresh token is not active")
-// 	}
-// 	err = t.Disable(th.DB)
-// 	if err != nil {
-// 		return errors.New("failed to disable refresh token")
-// 	}
-// 	*userAccountId = t.UserAccountId
-// 	return nil
-// }
+func (h *Handler) refreshTokenGrant(tokenRequest TokenRequest) (userAccountID *string, err error) {
+	token, err := h.jwtHelper.VerifyToken(tokenRequest.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+	return &token.UserAccount.ID, nil
+}

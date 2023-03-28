@@ -1,10 +1,12 @@
-package helpers
+package jwt
 
 import (
-	"errors"
 	"os"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pkg/errors"
+	"github.com/tashima42/go-oauth2-server/db"
 )
 
 type JWTHelper struct {
@@ -24,7 +26,7 @@ func (j *JWTHelper) GenerateToken(claims jwt.MapClaims) (string, error) {
 	return token.SignedString(j.secret)
 }
 
-func (j *JWTHelper) VerifyToken(tokenString string) (jwt.MapClaims, error) {
+func (j *JWTHelper) VerifyToken(tokenString string) (*db.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -36,7 +38,17 @@ func (j *JWTHelper) VerifyToken(tokenString string) (jwt.MapClaims, error) {
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return nil, err
+		return nil, errors.New("invalid token")
 	}
-	return claims, nil
+	expirationTime, err := claims.GetExpirationTime()
+	if err != nil && expirationTime.Time.Unix() < time.Now().Unix() {
+		return nil, errors.Wrap(err, "refresh token is expired")
+	}
+	parsedToken := db.Token{
+		ID:          claims["id"].(string),
+		ExpiresAt:   expirationTime.Time,
+		ClientID:    claims["client_id"].(string),
+		UserAccount: claims["user_account"].(db.UserAccount),
+	}
+	return &parsedToken, nil
 }
