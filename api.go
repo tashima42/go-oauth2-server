@@ -21,8 +21,8 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 
 	router.POST("/auth/login", handler.Login)
 	router.POST("/auth/token", handler.Token)
-	// // TODO: add user authorization middleware
-	// router.GET("/userinfo", handler.UserInfo)
+	router.Use(handler.AuthMiddleware)
+	router.GET("/userinfo", handler.UserInfo)
 
 	// router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/views/")))
 	router.Run(":8096")

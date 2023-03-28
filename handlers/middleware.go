@@ -17,3 +17,25 @@ func (h *Handler) CORSMiddleware(c *gin.Context) {
 		return
 	}
 }
+
+func (h *Handler) AuthMiddleware(c *gin.Context) {
+	var accessToken string
+	var err error
+
+	accessToken = c.GetHeader("Authorization")
+	if accessToken == "" {
+		accessToken, err = c.Cookie("SESSION")
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing access token"})
+			return
+		}
+	}
+
+	token, err := h.jwtHelper.VerifyToken(accessToken)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: invalid access token"})
+	}
+
+	c.Set("userToken", token)
+	c.Next()
+}
