@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+migrate \
+  -path ${MIGRATE_DIR:-$DIR/../db/schema_migrations} \
+  -database postgres://${PGUSER:-user}:${PGPASSWORD:-password}@${PGHOST:-localhost}:${PGPORT:-5501}/postgres?sslmode=disable \
+  $@

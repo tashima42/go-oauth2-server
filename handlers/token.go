@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/tashima42/go-oauth2-server/data"
+	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -40,7 +40,7 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 	var tokenRequest TokenRequestDTO
 	helpers.Decoder.Decode(&tokenRequest, r.PostForm)
 
-	c := data.Client{ClientId: tokenRequest.ClientId}
+	c := db.Client{ClientId: tokenRequest.ClientId}
 	err = c.GetByClientId(th.DB)
 	if err != nil {
 		switch err {
@@ -71,7 +71,7 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	token := data.Token{
+	token := db.Token{
 		ClientId:              c.ID,
 		UserAccountId:         userAccountId,
 		AccessToken:           helpers.GenerateRandomString(64),
@@ -97,7 +97,7 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 }
 
 func (th *TokenHandler) authorizationCodeGrant(tokenRequest TokenRequestDTO, userAccountId *int) error {
-	ac := data.AuthorizationCode{Code: tokenRequest.Code}
+	ac := db.AuthorizationCode{Code: tokenRequest.Code}
 	err := ac.GetByCode(th.DB)
 	if err != nil {
 		switch err {
@@ -119,7 +119,7 @@ func (th *TokenHandler) authorizationCodeGrant(tokenRequest TokenRequestDTO, use
 }
 
 func (th *TokenHandler) refreshTokenGrant(tokenRequest TokenRequestDTO, userAccountId *int) error {
-	t := data.Token{RefreshToken: tokenRequest.RefreshToken}
+	t := db.Token{RefreshToken: tokenRequest.RefreshToken}
 	err := t.GetByRefreshToken(th.DB)
 	if err != nil {
 		switch err {

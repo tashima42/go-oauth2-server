@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/tashima42/go-oauth2-server/data"
+	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
@@ -36,14 +36,14 @@ func (uh *UserInfoHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
 	splitToken := strings.Split(accessToken, "Bearer ")
 	accessToken = splitToken[1]
 
-	t := data.Token{AccessToken: accessToken}
+	t := db.Token{AccessToken: accessToken}
 	err := t.GetByAccessToken(uh.DB)
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "USERINFO-INVALID-ACCESS-TOKEN", err.Error())
 		return
 	}
 
-	u := data.UserAccount{ID: t.UserAccountId}
+	u := db.UserAccount{ID: t.UserAccountId}
 	err = u.GetById(uh.DB)
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "USERINFO-FAILED-GET-USER", err.Error())
@@ -64,7 +64,7 @@ func (uh *UserInfoHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := data.UserAccount{SubscriberId: subscriberId}
+	u := db.UserAccount{SubscriberId: subscriberId}
 	err := u.GetBySubscriberId(uh.DB)
 	if err != nil {
 		invalidUserResponse := InvalidUserResponse{Access: false, ErrorCode: "AUTHORIZATION-INVALID-SUBSCRIBER-ID", ErrorMessage: "Invalid subscriber_id"}

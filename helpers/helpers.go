@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/schema"
 )
 
 func NowPlusSeconds(seconds int) time.Time {
@@ -48,4 +46,4 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Write(response)
 }
 
-var Decoder = schema.NewDecoder()
+// var Decoder = schema.NewDecoder()

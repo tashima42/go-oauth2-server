@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/tashima42/go-oauth2-server/data"
+	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -40,7 +40,7 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var loginRequest LoginRequestDTO
 	helpers.Decoder.Decode(&loginRequest, r.PostForm)
 
-	c := data.Client{ClientId: loginRequest.ClientId}
+	c := db.Client{ClientId: loginRequest.ClientId}
 	err = c.GetByClientId(lh.DB)
 	if err != nil {
 		switch err {
@@ -56,7 +56,7 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := data.UserAccount{Username: loginRequest.Username, Country: loginRequest.Country}
+	u := db.UserAccount{Username: loginRequest.Username, Country: loginRequest.Country}
 	err = u.GetByUsernameAndCountry(lh.DB)
 	if err != nil {
 		switch err {
@@ -73,7 +73,7 @@ func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ac := data.AuthorizationCode{
+	ac := db.AuthorizationCode{
 		RedirectUri:   loginRequest.RedirectUri,
 		ClientId:      c.ID,
 		UserAccountId: u.ID,
@@ -95,7 +95,7 @@ func (lh *LoginHandler) LoginCustom(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
 	password := r.URL.Query().Get("password")
 
-	u := data.UserAccount{Username: username}
+	u := db.UserAccount{Username: username}
 	err := u.GetByUsername(lh.DB)
 	if err != nil {
 		switch err {
