@@ -10,8 +10,8 @@ import (
 	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
-func Serve(repo *db.Repo, hashHelper *helpers.HashHelper) {
-	handler := handlers.NewHandler(repo, hashHelper)
+func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *helpers.JWTHelper) {
+	handler := handlers.NewHandler(repo, hashHelper, jwtHelper)
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
 	router.Use(handler.CORSMiddleware)

@@ -4,39 +4,42 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type Token struct {
-	ID                    int    `json:"id"`
-	AccessToken           string `json:"access_token"`
-	RefreshToken          string `json:"refresh_token"`
-	Active                bool   `json:"active"`
-	AccessTokenExpiresAt  time.Time
-	RefreshTokenExpiresAt time.Time
-	ClientId              int
-	UserAccountId         int
+	ID          int         `json:"id"`
+	ExpiresAt   time.Time   `json:"expires_at"`
+	ClientID    string      `json:"client_id"`
+	UserAccount UserAccount `json:"user_account"`
 }
 
-func (t *Token) CreateToken(db *sql.DB) error {
-	return db.QueryRow(
-		"INSERT INTO tokens(access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING id;",
-		t.AccessToken,
-		helpers.FormatDateIso(t.AccessTokenExpiresAt),
-		t.RefreshToken,
-		helpers.FormatDateIso(t.RefreshTokenExpiresAt),
-		t.ClientId,
-		t.UserAccountId,
-	).Scan(&t.ID)
+func (t *Token) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"id":           t.ID,
+		"client_id":    t.ClientID,
+		"user_account": t.UserAccount,
+		"expires_at":   t.ExpiresAt,
+	}
 }
 
-func (t *Token) GetByRefreshToken(db *sql.DB) error {
+func (r *Repo) CreateTokenTxx(tx *sqlx.Tx, token Token) error {
+	query := "INSERT INTO tokens(access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id) VALUES($1, $2, $3, $4, $5, $6);"
+	_, err := tx.Exec(query, token.AccessToken, token.AccessTokenExpiresAt, token.RefreshToken, token.RefreshTokenExpiresAt, token.ClientID, token.UserAccountID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Repo) GetByRefreshToken(db *sql.DB) error {
 	var accessTokenExpiresAt string
 	var refreshTokenExpiresAt string
 	err := db.QueryRow(
 		"SELECT id, access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id, active FROM tokens WHERE refresh_token=$1 LIMIT 1;",
 		t.RefreshToken,
-	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientId, &t.UserAccountId, &t.Active)
+	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientID, &t.UserAccountID, &t.Active)
 	if err != nil {
 		return err
 	}
@@ -57,7 +60,7 @@ func (t *Token) GetByAccessToken(db *sql.DB) error {
 	err := db.QueryRow(
 		"SELECT id, access_token, access_token_expires_at, refresh_token, refresh_token_expires_at, client_id, user_account_id, active FROM tokens WHERE access_token=$1 LIMIT 1;",
 		t.AccessToken,
-	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientId, &t.UserAccountId, &t.Active)
+	).Scan(&t.ID, &t.AccessToken, &accessTokenExpiresAt, &t.RefreshToken, &refreshTokenExpiresAt, &t.ClientID, &t.UserAccountID, &t.Active)
 	if err != nil {
 		return err
 	}

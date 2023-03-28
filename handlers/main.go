@@ -8,8 +8,9 @@ import (
 type Handler struct {
 	repo       *db.Repo
 	hashHelper *helpers.HashHelper
+	jwtHelper  *helpers.JWTHelper
 }
 
-func NewHandler(repo *db.Repo, hashHelper *helpers.HashHelper) *Handler {
-	return &Handler{repo: repo, hashHelper: hashHelper}
+func NewHandler(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *helpers.JWTHelper) *Handler {
+	return &Handler{repo: repo, hashHelper: hashHelper, jwtHelper: jwtHelper}
 }

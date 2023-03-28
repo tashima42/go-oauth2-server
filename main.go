@@ -22,8 +22,12 @@ func main() {
 			if err != nil {
 				return errors.Wrap(err, "failed to open database")
 			}
+			jwtHelper, err := helpers.NewJWTHelperFromENV()
+			if err != nil {
+				return errors.Wrap(err, "failed to create jwt helper")
+			}
 			hashHelper := helpers.GetHashHelperInstance()
-			Serve(repo, hashHelper)
+			Serve(repo, hashHelper, jwtHelper)
 			// TODO: get signal and close database
 			return nil
 		},

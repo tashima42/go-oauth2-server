@@ -5,137 +5,131 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
-	"golang.org/x/crypto/bcrypt"
 )
 
-type TokenHandler struct {
-	DB *sql.DB
-}
-
-type TokenRequestDTO struct {
+type TokenRequest struct {
 	ClientId     string `schema:"client_id"`
 	ClientSecret string `schema:"client_secret"`
 	GrantType    string `schema:"grant_type"`
 	Code         string `schema:"code"`
 	RefreshToken string `schema:"refresh_token"`
 }
-type TokenResponseDTO struct {
-	Success               bool   `json:"success"`
-	TokenType             string `json:"token_type"`
-	AccessToken           string `json:"access_token"`
-	ExpiresIn             int    `json:"expires_in"`
-	RefreshToken          string `json:"refresh_token"`
-	RefreshTokenExpiresIn int    `json:"refresh_token_expires_in"`
+type TokenResponse struct {
+	Success               bool               `json:"success"`
+	TokenType             string             `json:"token_type"`
+	AccessToken           string             `json:"access_token"`
+	ExpiresIn             helpers.Expiration `json:"expires_in"`
+	RefreshToken          string             `json:"refresh_token"`
+	RefreshTokenExpiresIn helpers.Expiration `json:"refresh_token_expires_in"`
 }
 
-func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
-
-	err := r.ParseForm()
+func (h *Handler) Token(c *gin.Context) {
+	var tokenRequest TokenRequest
+	if err := c.ShouldBindJSON(&tokenRequest); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "TOKEN-PARSE-FORM-ERROR"})
+	}
+	tx, err := h.repo.BeginTxx(c, &sql.TxOptions{ReadOnly: false})
 	if err != nil {
-		helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-PARSE-FORM-ERROR", err.Error())
-		return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-TRANSACTION-ERROR"})
 	}
-	var tokenRequest TokenRequestDTO
-	helpers.Decoder.Decode(&tokenRequest, r.PostForm)
+	client, err := h.repo.GetClientByClientIDTxx(tx, tokenRequest.ClientId)
+	if matches, err := h.hashHelper.Verify(client.ClientSecret, tokenRequest.ClientSecret); err != nil || !matches {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Client Secret", "errorCode": "TOKEN-INVALID-CLIENT-SECRET"})
+	}
 
-	c := db.Client{ClientID: tokenRequest.ClientId}
-	err = c.GetByClientId(th.DB)
+	var userAccountID *string
+	switch tokenRequest.GrantType {
+	case string(helpers.AuthorizationCodeGrantType):
+		userAccountID, err = h.authorizationCodeGrant(tx, tokenRequest)
+		if err != nil || userAccountID == nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-AUTHORIZATION-CODE"})
+		}
+		break
+	// case string(helpers.RefreshTokenGrantType):
+	// 	userAccountID, err = h.refreshTokenGrant(tokenRequest)
+	// 	if err != nil {
+	// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-REFRESH-TOKEN"})
+	// 	}
+	// 	break
+	default:
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid Grant Type", "errorCode": "TOKEN-INVALID-GRANT-TYPE"})
+	}
+
+	userAccount, err := h.repo.GetUserAccountByIDTxx(tx, *userAccountID)
 	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			helpers.RespondWithError(w, http.StatusUnauthorized, "TOKEN-INVALID-CLIENT-ID", "Client id is invalid")
-		default:
-			helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-INVALID-CLIENT-ID", err.Error())
-		}
-		return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GET-USER-ACCOUNT"})
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(c.ClientSecret), []byte(tokenRequest.ClientSecret)) != nil {
-		helpers.RespondWithError(w, http.StatusUnauthorized, "TOKEN-INVALID-CLIENT-SECRET", "Invalid Client Secret")
-		return
+	accessToken := db.Token{
+		ClientID:    client.ClientID,
+		UserAccount: *userAccount,
+		ExpiresAt:   helpers.NowPlusSeconds(int(helpers.AccessTokenExpiration)),
 	}
-
-	var userAccountId int
-	if tokenRequest.GrantType == "authorization_code" {
-		err = th.authorizationCodeGrant(tokenRequest, &userAccountId)
-		if err != nil {
-			helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-INVALID-AUTHORIZATION-CODE", err.Error())
-			return
-		}
-	} else if tokenRequest.GrantType == "refresh_token" {
-		err = th.refreshTokenGrant(tokenRequest, &userAccountId)
-		if err != nil {
-			helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-INVALID-REFRESH-TOKEN", err.Error())
-			return
-		}
+	refreshToken := db.Token{
+		ClientID:    client.ClientID,
+		UserAccount: *userAccount,
+		ExpiresAt:   helpers.NowPlusSeconds(int(helpers.RefreshTokenExpiration)),
 	}
-	token := db.Token{
-		ClientId:              c.ID,
-		UserAccountId:         userAccountId,
-		AccessToken:           helpers.GenerateRandomString(64),
-		RefreshToken:          helpers.GenerateRandomString(64),
-		AccessTokenExpiresAt:  helpers.NowPlusSeconds(helpers.AccessTokenExpiration),
-		RefreshTokenExpiresAt: helpers.NowPlusSeconds(helpers.RefreshTokenExpiration),
-	}
-	err = token.CreateToken(th.DB)
+	accessTokenJWT, err := h.jwtHelper.GenerateToken(accessToken.ToMap())
 	if err != nil {
-		helpers.RespondWithError(w, http.StatusInternalServerError, "TOKEN-FAILED-TO-CREATE-TOKEN", err.Error())
-		return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GENERATE-TOKEN"})
+	}
+	refreshTokenJWT, err := h.jwtHelper.GenerateToken(refreshToken.ToMap())
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GENERATE-TOKEN"})
 	}
 
-	tokenResponse := TokenResponseDTO{
+	tokenResponse := TokenResponse{
 		Success:               true,
 		TokenType:             "Bearer",
-		AccessToken:           token.AccessToken,
+		AccessToken:           accessTokenJWT,
 		ExpiresIn:             helpers.AccessTokenExpiration,
-		RefreshToken:          token.RefreshToken,
+		RefreshToken:          refreshTokenJWT,
 		RefreshTokenExpiresIn: helpers.RefreshTokenExpiration,
 	}
-	helpers.RespondWithJSON(w, http.StatusOK, tokenResponse)
+	// TODO: check what happens if domain is not set
+	c.SetCookie("SESSION", accessTokenJWT, int(helpers.AccessTokenExpiration), "/", "", true, true)
+	c.JSON(http.StatusOK, tokenResponse)
 }
 
-func (th *TokenHandler) authorizationCodeGrant(tokenRequest TokenRequestDTO, userAccountId *int) error {
-	ac := db.AuthorizationCode{Code: tokenRequest.Code}
-	err := ac.GetByCode(th.DB)
+func (h *Handler) authorizationCodeGrant(tx *sqlx.Tx, tokenRequest TokenRequest) (userAccountID *string, err error) {
+	authorizationCode, err := h.repo.GetAuthorizationCodeByCodeTxx(tx, tokenRequest.Code)
 	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			return errors.New("authorization code not found")
-		default:
-			return errors.New("failed to get authorization code")
-		}
+		return nil, err
 	}
-	if !ac.Active {
-		return errors.New("authorization code is not active")
+	if !authorizationCode.Active {
+		return nil, errors.New("authorization code is not active")
 	}
-	err = ac.Disable(th.DB)
+	err = h.repo.DisableAuthorizationCodeByIDTxx(tx, authorizationCode.ID)
 	if err != nil {
-		return errors.New("failed to disable authorization code")
+		return nil, errors.New("failed to disable authorization code")
 	}
-	*userAccountId = ac.UserAccountID
-	return nil
+	return &authorizationCode.UserAccountID, nil
 }
 
-func (th *TokenHandler) refreshTokenGrant(tokenRequest TokenRequestDTO, userAccountId *int) error {
-	t := db.Token{RefreshToken: tokenRequest.RefreshToken}
-	err := t.GetByRefreshToken(th.DB)
-	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			return errors.New("authorization code not found")
-		default:
-			return errors.New("failed to get authorization code")
-		}
-	}
-	if !t.Active {
-		return errors.New("refresh token is not active")
-	}
-	err = t.Disable(th.DB)
-	if err != nil {
-		return errors.New("failed to disable refresh token")
-	}
-	*userAccountId = t.UserAccountId
-	return nil
-}
+// TODO: use JWT
+// func (h *Handler) refreshTokenGrant(tokenRequest TokenRequest) (userAccountID int, err error) {
+// 	t := db.Token{RefreshToken: tokenRequest.RefreshToken}
+// 	err := t.GetByRefreshToken(th.DB)
+// 	if err != nil {
+// 		switch err {
+// 		case sql.ErrNoRows:
+// 			return errors.New("authorization code not found")
+// 		default:
+// 			return errors.New("failed to get authorization code")
+// 		}
+// 	}
+// 	if !t.Active {
+// 		return errors.New("refresh token is not active")
+// 	}
+// 	err = t.Disable(th.DB)
+// 	if err != nil {
+// 		return errors.New("failed to disable refresh token")
+// 	}
+// 	*userAccountId = t.UserAccountId
+// 	return nil
+// }

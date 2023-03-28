@@ -33,11 +33,14 @@ func (r *Repo) GetUserAccountByUsernameAndCountryTxx(tx *sqlx.Tx, username strin
 	return &u, nil
 }
 
-func (u *UserAccount) GetByIdTxx(db *sql.DB) error {
-	return db.QueryRow(
-		"SELECT id, username, password, country, subscriber_id FROM user_accounts WHERE id=$1 LIMIT 1;",
-		u.ID,
-	).Scan(&u.ID, &u.Username, &u.Password, &u.Country, &u.SubscriberId)
+func (r *Repo) GetUserAccountByIDTxx(tx *sqlx.Tx, ID string) (*UserAccount, error) {
+	var u UserAccount
+	query := "SELECT id, username, password, country, subscriber_id FROM user_accounts WHERE id=$1 LIMIT 1;"
+	err := tx.Get(&u, query, ID)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
 }
 
 func (u *UserAccount) GetByUsername(db *sql.DB) error {

@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -27,23 +26,18 @@ func (r *Repo) CreateAuthorizationCodeTxx(tx *sqlx.Tx, ac AuthorizationCode) err
 	return nil
 }
 
-func (ac *AuthorizationCode) GetByCode(db *sql.DB) error {
-	var expiresAt string
-	err := db.QueryRow(
-		"SELECT id, code, expires_at, redirect_uri,client_id, user_account_id, active FROM authorization_codes WHERE code=$1 LIMIT 1;",
-		ac.Code,
-	).Scan(&ac.ID, &ac.Code, &expiresAt, &ac.RedirectURI, &ac.ClientID, &ac.UserAccountID, &ac.Active)
+func (r *Repo) GetAuthorizationCodeByCodeTxx(tx *sqlx.Tx, code string) (*AuthorizationCode, error) {
+	var ac AuthorizationCode
+	query := "SELECT id, code, expires_at, redirect_uri,client_id, user_account_id, active FROM authorization_codes WHERE code=$1 LIMIT 1;"
+	err := tx.Get(&ac, query, code)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	ac.ExpiresAt, err = helpers.ParseDateIso(expiresAt)
-	if err != nil {
-		return err
-	}
-	return nil
+	return &ac, nil
 }
 
-func (ac *AuthorizationCode) Disable(db *sql.DB) error {
-	_, err := db.Exec("UPDATE authorization_codes SET active=false WHERE id=$1;", ac.ID)
+func (r *Repo) DisableAuthorizationCodeByIDTxx(tx *sqlx.Tx, ID string) error {
+	query := "UPDATE authorization_codes SET active=false WHERE id=$1;"
+	_, err := tx.Exec(query, ID)
 	return err
 }

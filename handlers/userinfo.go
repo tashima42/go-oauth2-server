@@ -43,7 +43,7 @@ func (uh *UserInfoHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := db.UserAccount{ID: t.UserAccountId}
+	u := db.UserAccount{ID: t.UserAccountID}
 	err = u.GetById(uh.DB)
 	if err != nil {
 		helpers.RespondWithError(w, http.StatusInternalServerError, "USERINFO-FAILED-GET-USER", err.Error())
