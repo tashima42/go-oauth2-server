@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/tashima42/go-oauth2-server/db"
+	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 func main() {
@@ -21,7 +22,8 @@ func main() {
 			if err != nil {
 				return errors.Wrap(err, "failed to open database")
 			}
-			Serve(repo)
+			hashHelper := helpers.GetHashHelperInstance()
+			Serve(repo, hashHelper)
 			// TODO: get signal and close database
 			return nil
 		},

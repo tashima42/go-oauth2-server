@@ -1,10 +1,7 @@
 package helpers
 
 import (
-	"encoding/json"
-	"fmt"
 	"math/rand"
-	"net/http"
 	"time"
 )
 
@@ -32,18 +29,3 @@ func ParseDateIso(date string) (time.Time, error) {
 func FormatDateIso(date time.Time) string {
 	return date.Format("2006-01-02T15:04:05-0700")
 }
-
-func RespondWithError(w http.ResponseWriter, code int, errorCode string, message string) {
-	fmt.Printf("ErrorCode: %v, Message: %v", errorCode, message)
-	RespondWithJSON(w, code, map[string]interface{}{"success": false, "errorCode": errorCode, "message": message})
-}
-
-func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
-}
-
-// var Decoder = schema.NewDecoder()

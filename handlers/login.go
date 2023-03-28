@@ -4,91 +4,73 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type LoginHandler struct {
-	DB *sql.DB
-}
-
-type LoginRequestDTO struct {
+type LoginRequest struct {
 	Username        string `schema:"username"`
 	Password        string `schema:"password"`
 	Country         string `schema:"country"`
-	RedirectUri     string `schema:"redirect_uri"`
+	RedirectURI     string `schema:"redirect_uri"`
 	State           string `schema:"state"`
-	ClientId        string `schema:"client_id"`
+	ClientID        string `schema:"client_id"`
 	ResponseType    string `schema:"response_type"`
 	FailureRedirect string `schema:"failureRedirect"`
-	CpConvert       string `schema:"cp_convert"`
+	CPConvert       string `schema:"cp_convert"`
 }
-type LoginResponseDTO struct {
-	Success     bool   `json:"success"`
-	RedirectUri string `json:"redirect_uri"`
+type LoginResponse struct {
+	RedirectURI string `json:"redirect_uri"`
 	State       string `json:"state"`
 	Code        string `json:"code"`
 }
 
-func (lh *LoginHandler) Login(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-PARSE-FORM-ERROR", err.Error())
-		return
+func (h *Handler) Login(c *gin.Context) {
+	var loginRequest LoginRequest
+	if err := c.ShouldBindJSON(&loginRequest); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-PARSE-FORM-ERROR"})
 	}
-	var loginRequest LoginRequestDTO
-	helpers.Decoder.Decode(&loginRequest, r.PostForm)
-
-	c := db.Client{ClientId: loginRequest.ClientId}
-	err = c.GetByClientId(lh.DB)
-	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			helpers.RespondWithError(w, http.StatusBadRequest, "LOGIN-INVALID-CLIENT-ID", "Client Id not found")
-		default:
-			helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-CLIENT-ID-FAILED", err.Error())
-		}
-		return
+	if loginRequest.ResponseType != "code" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid response_type", "errorCode": "LOGIN-INVALID-RESPONSE-TYPE"})
 	}
-	if c.RedirectUri != loginRequest.RedirectUri {
-		helpers.RespondWithError(w, http.StatusBadRequest, "LOGIN-INVALID-REDIRECT-URI", "Invalid redirect_uri")
-		return
+	tx, err := h.repo.BeginTxx(c, &sql.TxOptions{ReadOnly: false})
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-TRANSACTION-ERROR"})
+	}
+	client, err := h.repo.GetClientByClientIDTxx(tx, loginRequest.ClientID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-INVALID-CLIENT-ID"})
 	}
 
-	u := db.UserAccount{Username: loginRequest.Username, Country: loginRequest.Country}
-	err = u.GetByUsernameAndCountry(lh.DB)
-	if err != nil {
-		switch err {
-		case sql.ErrNoRows:
-			helpers.RespondWithError(w, http.StatusBadRequest, "LOGIN-INVALID-USERNAME-OR-COUNTRY", "Username and country combination not found")
-		default:
-			helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-USERNAME-OR-COUNTRY-FAILED", err.Error())
-		}
-		return
+	if client.RedirectURI != loginRequest.RedirectURI {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid redirect_uri", "errorCode": "LOGIN-INVALID-REDIRECT-URI"})
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(loginRequest.Password)) != nil {
-		helpers.RespondWithError(w, http.StatusUnauthorized, "LOGIN-INVALID-PASSWORD", "invalid password")
-		return
+	userAccount, err := h.repo.GetUserAccountByUsernameAndCountryTxx(tx, loginRequest.Username, loginRequest.Country)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-INVALID-USERNAME-OR-COUNTRY"})
+	}
+
+	if matches, err := h.hashHelper.Verify(userAccount.Password, loginRequest.Password); err != nil || !matches {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid password", "errorCode": "LOGIN-INVALID-PASSWORD"})
 	}
 
 	ac := db.AuthorizationCode{
-		RedirectUri:   loginRequest.RedirectUri,
-		ClientId:      c.ID,
-		UserAccountId: u.ID,
+		RedirectURI:   loginRequest.RedirectURI,
+		ClientID:      client.ClientID,
+		UserAccountID: userAccount.ID,
 		Code:          helpers.GenerateRandomString(64),
 		ExpiresAt:     helpers.NowPlusSeconds(helpers.AuthorizationCodeExpiration),
 	}
-	err = ac.CreateAuthorizationCode(lh.DB)
+	err = h.repo.CreateAuthorizationCodeTxx(tx, ac)
 	if err != nil {
-		helpers.RespondWithError(w, http.StatusInternalServerError, "LOGIN-FAILED-CREATE-AUTHORIZATION-CODE", err.Error())
-		return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-FAILED-CREATE-AUTHORIZATION-CODE"})
 	}
 
-	loginResponse := LoginResponseDTO{Success: true, RedirectUri: ac.RedirectUri, State: loginRequest.State, Code: ac.Code}
-
-	helpers.RespondWithJSON(w, http.StatusOK, loginResponse)
+	loginResponse := LoginResponse{RedirectURI: ac.RedirectURI, State: loginRequest.State, Code: ac.Code}
+	c.JSON(http.StatusOK, loginResponse)
 }
 
 func (lh *LoginHandler) LoginCustom(w http.ResponseWriter, r *http.Request) {

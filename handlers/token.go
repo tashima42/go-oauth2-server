@@ -40,7 +40,7 @@ func (th *TokenHandler) Token(w http.ResponseWriter, r *http.Request) {
 	var tokenRequest TokenRequestDTO
 	helpers.Decoder.Decode(&tokenRequest, r.PostForm)
 
-	c := db.Client{ClientId: tokenRequest.ClientId}
+	c := db.Client{ClientID: tokenRequest.ClientId}
 	err = c.GetByClientId(th.DB)
 	if err != nil {
 		switch err {
@@ -114,7 +114,7 @@ func (th *TokenHandler) authorizationCodeGrant(tokenRequest TokenRequestDTO, use
 	if err != nil {
 		return errors.New("failed to disable authorization code")
 	}
-	*userAccountId = ac.UserAccountId
+	*userAccountId = ac.UserAccountID
 	return nil
 }
 

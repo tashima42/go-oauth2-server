@@ -4,28 +4,27 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type AuthorizationCode struct {
-	ID            int    `json:"id"`
-	Code          string `json:"code"`
-	Active        bool   `json:"active"`
-	ExpiresAt     time.Time
-	RedirectUri   string
-	ClientId      int
-	UserAccountId int
+	ID            string    `json:"id" db:"id"`
+	Code          string    `json:"code" db:"code"`
+	Active        bool      `json:"active" db:"active"`
+	ExpiresAt     time.Time `json:"expires_at" db:"expires_at"`
+	RedirectURI   string    `json:"redirect_uri" db:"redirect_uri"`
+	ClientID      string    `db:"client_id"`
+	UserAccountID string    `db:"user_account_id"`
 }
 
-func (ac *AuthorizationCode) CreateAuthorizationCode(db *sql.DB) error {
-	return db.QueryRow(
-		"INSERT INTO authorization_codes(code, expires_at, redirect_uri, client_id, user_account_id) VALUES($1, $2, $3, $4, $5) RETURNING id;",
-		ac.Code,
-		helpers.FormatDateIso(ac.ExpiresAt),
-		ac.RedirectUri,
-		ac.ClientId,
-		ac.UserAccountId,
-	).Scan(&ac.ID)
+func (r *Repo) CreateAuthorizationCodeTxx(tx *sqlx.Tx, ac AuthorizationCode) error {
+	query := "INSERT INTO authorization_codes(code, expires_at, redirect_uri, client_id, user_account_id) VALUES($1, $2, $3, $4, $5);"
+	_, err := tx.Exec(query, ac.Code, helpers.FormatDateIso(ac.ExpiresAt), ac.RedirectURI, ac.ClientID, ac.UserAccountID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ac *AuthorizationCode) GetByCode(db *sql.DB) error {
@@ -33,7 +32,7 @@ func (ac *AuthorizationCode) GetByCode(db *sql.DB) error {
 	err := db.QueryRow(
 		"SELECT id, code, expires_at, redirect_uri,client_id, user_account_id, active FROM authorization_codes WHERE code=$1 LIMIT 1;",
 		ac.Code,
-	).Scan(&ac.ID, &ac.Code, &expiresAt, &ac.RedirectUri, &ac.ClientId, &ac.UserAccountId, &ac.Active)
+	).Scan(&ac.ID, &ac.Code, &expiresAt, &ac.RedirectURI, &ac.ClientID, &ac.UserAccountID, &ac.Active)
 	if err != nil {
 		return err
 	}

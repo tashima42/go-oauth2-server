@@ -7,10 +7,11 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/handlers"
+	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
-func Serve(repo *db.Repo) {
-	handler := handlers.NewHandler(repo)
+func Serve(repo *db.Repo, hashHelper *helpers.HashHelper) {
+	handler := handlers.NewHandler(repo, hashHelper)
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
 	router.Use(handler.CORSMiddleware)
