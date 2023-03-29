@@ -56,11 +56,16 @@ func (h *Handler) Login(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid password", "errorCode": "LOGIN-INVALID-PASSWORD"})
 	}
 
+	code, err := h.hashHelper.GenerateRandomString(64)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-FAILED-GENERATE-RANDOM-STRING"})
+	}
+
 	ac := db.AuthorizationCode{
 		RedirectURI:   loginRequest.RedirectURI,
 		ClientID:      client.ClientID,
 		UserAccountID: userAccount.ID,
-		Code:          helpers.GenerateRandomString(64),
+		Code:          code,
 		ExpiresAt:     helpers.NowPlusSeconds(int(helpers.AuthorizationCodeExpiration)),
 	}
 	err = h.repo.CreateAuthorizationCodeTxx(tx, ac)

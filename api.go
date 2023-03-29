@@ -19,8 +19,9 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 
 	router.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
 
+	router.GET("/authorize", handler.Authorize)
+	router.POST("/token", handler.Token)
 	router.POST("/auth/login", handler.Login)
-	router.POST("/auth/token", handler.Token)
 	router.Use(handler.AuthMiddleware)
 	router.GET("/userinfo", handler.UserInfo)
 

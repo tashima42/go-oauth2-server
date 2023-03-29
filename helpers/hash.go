@@ -1,10 +1,12 @@
 package helpers
 
 import (
+	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
-	"math/rand"
+	"io"
+	"math/big"
 	"strings"
 	"sync"
 
@@ -67,6 +69,7 @@ func (h *HashHelper) Verify(plain string, hash string) (bool, error) {
 }
 
 func GetHashHelperInstance() *HashHelper {
+	assertAvailablePRNG()
 	if hashHelperInstance == nil {
 		once.Do(func() {
 			hashHelperInstance = &HashHelper{
@@ -81,4 +84,41 @@ func GetHashHelperInstance() *HashHelper {
 		})
 	}
 	return hashHelperInstance
+}
+
+// https://gist.github.com/dopey/c69559607800d2f2f90b1b1ed4e550fb
+func (h *HashHelper) GenerateRandomString(n int) (string, error) {
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+	ret := make([]byte, n)
+	for i := 0; i < n; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			return "", err
+		}
+		ret[i] = letters[num.Int64()]
+	}
+
+	return string(ret), nil
+}
+
+func generateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func assertAvailablePRNG() {
+	// Assert that a cryptographically secure PRNG is available.
+	// Panic otherwise.
+	buf := make([]byte, 1)
+
+	_, err := io.ReadFull(rand.Reader, buf)
+	if err != nil {
+		panic(fmt.Sprintf("crypto/rand is unavailable: Read() failed with %#v", err))
+	}
 }

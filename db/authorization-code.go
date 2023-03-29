@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type AuthorizationCode struct {
@@ -19,7 +18,7 @@ type AuthorizationCode struct {
 
 func (r *Repo) CreateAuthorizationCodeTxx(tx *sqlx.Tx, ac AuthorizationCode) error {
 	query := "INSERT INTO authorization_codes(code, expires_at, redirect_uri, client_id, user_account_id) VALUES($1, $2, $3, $4, $5);"
-	_, err := tx.Exec(query, ac.Code, helpers.FormatDateIso(ac.ExpiresAt), ac.RedirectURI, ac.ClientID, ac.UserAccountID)
+	_, err := tx.Exec(query, ac.Code, ac.ExpiresAt, ac.RedirectURI, ac.ClientID, ac.UserAccountID)
 	if err != nil {
 		return err
 	}
