@@ -13,6 +13,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+type DBRepo interface {
+	// General
+	Open(conf Config) (*Repo, error)
+	Close() error
+	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
+	Rollback(tx *sqlx.Tx, err error) error
+	// AuthorizationCode
+	CreateAuthorizationCodeTxx(tx *sqlx.Tx, ac AuthorizationCode) error
+}
+
 type Repo struct {
 	db      *sqlx.DB
 	config  Config

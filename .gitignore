@@ -1,7 +1,7 @@
 .env
 /tmp
-/src/.env
-/src/tmp
+/api/.env
+/api/tmp
 /secrets
 # Binaries for programs and plugins
 *.exe

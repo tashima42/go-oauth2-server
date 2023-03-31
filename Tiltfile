@@ -7,7 +7,7 @@ namespace_create('go-oauth2-server')
 docker_build('k3d-registry.tashima.space:5345/tashima42/go-oauth2-server',
              context='.',
              live_update=[
-                sync('./src', '/app'),
+                sync('./api', '/app'),
              ]
 )
 
