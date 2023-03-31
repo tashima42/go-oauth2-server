@@ -15,20 +15,18 @@ spec:
     spec:
       terminationGracePeriodSeconds: 30
       containers:
-        - name: api
-          image: ghcr.io/tashima42/go-oauth2-server:main
+        - name: go-oauth2-server-api
+          image: k3d-registry.tashima.space:5345/tashima42/go-oauth2-server
           imagePullPolicy: "Always"
           env:
             - name: TZ
               value: "GMT-3"
-            - name: ARGS
-              value: api
             - name: DB_USER
               value: outtakes
             - name: DB_NAME
               value: postgres
             - name: DB_HOST
-              value: postgres-cluster-ip-service
+              value: database-cluster-ip-service
             - name: DB_PORT
               value: '5432'
             - name: GIN_MODE
@@ -38,8 +36,8 @@ spec:
                 secretKeyRef:
                   name: pgpassword
                   key: PGPASSWORD
-            - name: TELEGRAM_TOKEN
+            - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: telegramtoken
-                  key: TELEGRAM_TOKEN
+                  name: jwtsecret
+                  key: JWTSECRET

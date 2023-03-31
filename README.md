@@ -4,6 +4,8 @@
 You can start by using the [Postman Collection](https://www.postman.com/qrestoque/workspace/pedro-tashima-s-public-workspace/collection/13233153-c52c7618-7e33-48ab-b855-f0b54e27134e?action=share&creator=13233153)    
 > The requests need to be made in order, there are automatic tests that will set the collection variables for you.
 
+* This Implementation is meant to be used by Public clients // TODO: add link to RFC 6749 2.1.  Client Types
+
 ## Disclaimers: 
 * **NEVER** use this in production, this implementation **INSECURE**, but it's a good start point to understand how OAuth 2.0 works
 
