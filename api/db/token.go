@@ -19,6 +19,7 @@ func (t *Token) ToMap() map[string]interface{} {
 		"userAccount": map[string]interface{}{
 			"username": t.UserAccount.Username,
 			"id":       t.UserAccount.ID,
+			"type":     t.UserAccount.Type,
 		},
 		"scopes": t.Scopes,
 		"exp":    t.ExpiresAt.Unix(),

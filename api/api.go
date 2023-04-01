@@ -23,6 +23,11 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	router.POST("/user-accounts", handler.CreateUserAccount)
 
 	router.Use(handler.AuthMiddleware)
+	router.POST(
+		"/dev-accounts",
+		handler.VerifyRequiredScopes([]helpers.Scope{helpers.CreateDevAccountScope}),
+		handler.CreateDevAccount,
+	)
 
 	router.GET("/authorize", handler.Authorize)
 	router.POST("/token", handler.Token)

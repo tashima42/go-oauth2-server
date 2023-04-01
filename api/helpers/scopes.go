@@ -3,9 +3,10 @@ package helpers
 type Scope string
 
 const (
-	AdminScope        Scope = "admin"
-	ClientCreateScope Scope = "client:create"
-	ClientListScope   Scope = "client:list"
+	AdminScope            Scope = "admin"
+	ClientCreateScope     Scope = "client:create"
+	ClientListScope       Scope = "client:list"
+	CreateDevAccountScope Scope = "dev_account:create"
 )
 
 func ScopesFromInterface(scopes []interface{}) []Scope {

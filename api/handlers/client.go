@@ -53,6 +53,7 @@ func (h *Handler) CreateClient(c *gin.Context) {
 			return
 		}
 	}
+	// TODO: validate redirect uri, make sure it's a valid url with https and it doesn't has a query string
 
 	rawClientSecret, err := h.hashHelper.GenerateRandomString(128)
 	if err != nil {
