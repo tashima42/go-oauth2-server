@@ -20,6 +20,7 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	router.GET("/ping", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"message": "pong"}) })
 	// use differnt cors middleware for login, only accept same origin
 	router.POST("/login", handler.Login)
+	router.POST("/user-accounts", handler.CreateUserAccount)
 
 	router.Use(handler.AuthMiddleware)
 
@@ -31,7 +32,6 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 		handler.VerifyRequiredScopes([]helpers.Scope{helpers.ClientCreateScope}),
 		handler.CreateClient,
 	)
-	router.POST("/user-accounts", handler.CreateUserAccount)
 	router.GET("/userinfo", handler.UserInfo)
 
 	router.Run(":8096")

@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"log"
 	"os"
 	"time"
 
@@ -46,11 +45,14 @@ func (j *JWTHelper) VerifyToken(tokenString string) (*db.Token, error) {
 	if err != nil && expirationTime.Time.Unix() < time.Now().Unix() {
 		return nil, errors.Wrap(err, "refresh token is expired")
 	}
-	log.Println("expirationTime", expirationTime.Time)
+	scopesRaw, ok := claims["scopes"]
+	if !ok {
+		return nil, errors.New("invalid token")
+	}
 	parsedToken := db.Token{
 		ExpiresAt:   expirationTime.Time,
 		ClientID:    claims["clientID"].(string),
-		Scopes:      claims["scopes"].([]helpers.Scope),
+		Scopes:      helpers.ScopesFromInterface(scopesRaw.([]interface{})),
 		UserAccount: db.UserAccountFromMap(claims["userAccount"].(map[string]interface{})),
 	}
 	return &parsedToken, nil

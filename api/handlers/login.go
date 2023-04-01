@@ -50,6 +50,7 @@ func (h *Handler) Login(c *gin.Context) {
 	accessToken := db.Token{
 		ClientID:    "",
 		UserAccount: *userAccount,
+		Scopes:      userAccount.ScopesToSlice(),
 		ExpiresAt:   helpers.NowPlusSeconds(int(helpers.AccessTokenExpiration)),
 	}
 	accessTokenJWT, err := h.jwtHelper.GenerateToken(accessToken.ToMap())

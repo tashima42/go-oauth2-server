@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tashima42/go-oauth2-server/db"
+	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type CreateUserAccountRequest struct {
@@ -56,6 +57,8 @@ func (h *Handler) CreateUserAccount(c *gin.Context) {
 	userAccount := db.UserAccount{
 		Username: createUserAccountRequest.Username,
 		Password: hashedPassword,
+		// TODO: review default scopes
+		Scopes: []string{string(helpers.ClientCreateScope), string(helpers.ClientListScope)},
 	}
 	err = h.repo.CreateUserAccountTxx(tx, userAccount)
 	if err != nil {

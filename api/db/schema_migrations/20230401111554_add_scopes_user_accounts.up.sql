@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS user_accounts ADD COLUMN scopes TEXT[];
