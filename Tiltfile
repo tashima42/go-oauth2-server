@@ -7,7 +7,7 @@ local_resource(
   'go-compile',
   'CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/go-oauth2-server ./',
   dir='./api',
-  deps=['./api/main.go', './api.go.mod', './api.go.sum', './api/api.go'],
+  deps=['./api/main.go', './api.go.mod', './api.go.sum', './api/api.go', './api/db', './api/handlers', './api/helpers' ],
 )
 
 # Build Docker image
