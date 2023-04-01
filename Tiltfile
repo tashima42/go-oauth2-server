@@ -15,7 +15,7 @@ local_resource(
 load('ext://restart_process', 'docker_build_with_restart')
 docker_build_with_restart('k3d-registry.tashima.space:5345/tashima42/go-oauth2-server',
              context='.',
-             dockerfile='Dockerfile.dev',
+             dockerfile='api/Dockerfile.dev',
              entrypoint="/app/build/go-oauth2-server",
              only=['./api/build', "./api/db/schema_migrations"],
              live_update=[
