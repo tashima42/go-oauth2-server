@@ -7,6 +7,7 @@ type Oauth2Error error
 var ServerError Oauth2Error = errors.New("server_error")
 var InvalidRequest Oauth2Error = errors.New("invalid_request")
 var UnsupportedResponseType Oauth2Error = errors.New("unsupported_response_type")
+var InvalidScope Oauth2Error = errors.New("invalid_scope")
 
 var RedirectURIInvalid error = errors.New("redirect_uri is invalid")
 var RedirectURIRequired error = errors.New("redirect_uri is required")

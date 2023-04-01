@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS clients ADD COLUMN scopes text[] NOT NULL DEFAULT '{}';

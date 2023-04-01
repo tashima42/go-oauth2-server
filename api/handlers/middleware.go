@@ -52,19 +52,10 @@ func (h *Handler) VerifyRequiredScopes(requiredScopes []string) gin.HandlerFunc 
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing access token"})
 		}
 		token := rawToken.(*db.Token)
-		tokenScopesMap := make(map[string]bool)
-		for _, scope := range token.Scopes {
-			if scope == helpers.AdminScope {
-				c.Next()
-				return
-			}
-			tokenScopesMap[scope] = true
-		}
-		for _, requiredScope := range requiredScopes {
-			if _, ok := tokenScopesMap[requiredScope]; !ok {
-				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing required scope"})
-				return
-			}
+		isRequiredScopeSubsetOfTokenScopes := helpers.IsSliceSubset(requiredScopes, token.Scopes)
+		if !isRequiredScopeSubsetOfTokenScopes {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing required scope"})
+			return
 		}
 		c.Next()
 	}

@@ -17,6 +17,7 @@ type AuthorizeRequest struct {
 	ClientID     string
 	RedirectURI  string
 	State        string
+	Scope        string
 }
 
 func (h *Handler) Authorize(c *gin.Context) {
@@ -25,12 +26,16 @@ func (h *Handler) Authorize(c *gin.Context) {
 		ClientID:     c.Query("client_id"),
 		RedirectURI:  c.Query("redirect_uri"),
 		State:        c.Query("state"),
+		Scope:        c.Query("scope"),
 	}
+	log.Println("AuthorizeRequest: ", authorizeRequest)
 	err := authorizeRequest.validate()
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
+
+	requestedScopes := strings.Split(authorizeRequest.Scope, "+")
 
 	tx, err := h.repo.BeginTxx(c, nil)
 	if err != nil {
@@ -54,7 +59,20 @@ func (h *Handler) Authorize(c *gin.Context) {
 
 	if authorizeRequest.RedirectURI != client.RedirectURI {
 		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", InvalidRequest.Error(), "redirect uri does not match"))
-		c.Redirect(http.StatusBadRequest, redirectLocation)
+		c.Redirect(http.StatusFound, redirectLocation)
+		return
+	}
+
+	areRequestedScopesqSubsetOfClientScopes := helpers.IsSliceSubset(requestedScopes, client.Scopes)
+	if !areRequestedScopesqSubsetOfClientScopes {
+		if err = db.Rollback(tx, err); err != nil {
+			redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
+			c.Redirect(http.StatusFound, redirectLocation)
+			return
+		}
+		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", InvalidScope.Error(), "requested scopes are not a subset of client scopes"))
+		log.Println("redirectLocation: ", redirectLocation)
+		c.Redirect(http.StatusFound, redirectLocation)
 		return
 	}
 
@@ -70,11 +88,11 @@ func (h *Handler) Authorize(c *gin.Context) {
 		h.authorizeAuthorizationCodeGrant(c, authorizeRequest, redirectLocation, *parsedToken)
 		return
 	case "token":
-		h.authorizeImplicitGrant(c, authorizeRequest, redirectLocation, *parsedToken)
+		h.authorizeImplicitGrant(c, authorizeRequest, redirectLocation, *parsedToken, requestedScopes)
 		return
 	}
 	redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", UnsupportedResponseType.Error(), "response type not supported"))
-	c.Redirect(http.StatusBadRequest, redirectLocation)
+	c.Redirect(http.StatusFound, redirectLocation)
 }
 
 func (h *Handler) authorizeAuthorizationCodeGrant(c *gin.Context, authorizeRequest AuthorizeRequest, redirectLocation string, token db.Token) {
@@ -82,7 +100,7 @@ func (h *Handler) authorizeAuthorizationCodeGrant(c *gin.Context, authorizeReque
 	code, err := h.hashHelper.GenerateRandomString(64)
 	if err != nil {
 		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
-		c.Redirect(http.StatusInternalServerError, redirectLocation)
+		c.Redirect(http.StatusFound, redirectLocation)
 		return
 	}
 
@@ -90,17 +108,17 @@ func (h *Handler) authorizeAuthorizationCodeGrant(c *gin.Context, authorizeReque
 	c.Redirect(http.StatusFound, redirectLocation)
 }
 
-func (h *Handler) authorizeImplicitGrant(c *gin.Context, authorizeRequest AuthorizeRequest, redirectLocation string, token db.Token) {
-	// TODO: after implementing scopes, check if the client has the right scope
+func (h *Handler) authorizeImplicitGrant(c *gin.Context, authorizeRequest AuthorizeRequest, redirectLocation string, token db.Token, scopes []string) {
 	accessToken := db.Token{
 		ClientID:    authorizeRequest.ClientID,
 		UserAccount: token.UserAccount,
 		ExpiresAt:   helpers.NowPlusSeconds(int(helpers.AccessTokenExpiration)),
+		Scopes:      scopes,
 	}
 	accessTokenJWT, err := h.jwtHelper.GenerateToken(accessToken.ToMap())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GENERATE-TOKEN"})
-		return
+		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating token"))
+		c.Redirect(http.StatusFound, redirectLocation)
 	}
 	redirectLocation = strings.Replace(redirectLocation, "?", "#", 1) + url.QueryEscape(fmt.Sprintf("access_token=%s&token_type=bearer&expires_in=%d&state=%s", accessTokenJWT, helpers.AccessTokenExpiration, authorizeRequest.State))
 	log.Println("redirectLocation", redirectLocation)

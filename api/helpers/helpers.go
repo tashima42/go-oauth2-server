@@ -15,3 +15,16 @@ func ParseDateIso(date string) (time.Time, error) {
 func FormatDateIso(date time.Time) string {
 	return date.Format("2006-01-02T15:04:05-0700")
 }
+
+func IsSliceSubset(subset, superset []string) bool {
+	supersetMap := make(map[string]bool)
+	for _, sp := range superset {
+		supersetMap[sp] = true
+	}
+	for _, sb := range subset {
+		if _, ok := supersetMap[sb]; !ok {
+			return false
+		}
+	}
+	return true
+}

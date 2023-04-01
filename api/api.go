@@ -37,7 +37,11 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 		handler.VerifyRequiredScopes([]string{helpers.ClientCreateScope}),
 		handler.CreateClient,
 	)
-	router.GET("/userinfo", handler.UserInfo)
+	router.GET(
+		"/userinfo",
+		handler.VerifyRequiredScopes([]string{helpers.UserAccountUserInfoScope}),
+		handler.UserInfo,
+	)
 
 	router.Run(":8096")
 }
