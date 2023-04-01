@@ -2,15 +2,13 @@ package db
 
 import (
 	"time"
-
-	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type Token struct {
 	ExpiresAt   time.Time
 	ClientID    string
 	UserAccount UserAccount
-	Scopes      []helpers.Scope
+	Scopes      []string
 }
 
 func (t *Token) ToMap() map[string]interface{} {

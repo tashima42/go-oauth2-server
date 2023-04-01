@@ -3,7 +3,6 @@ package db
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type AccountType string
@@ -30,10 +29,10 @@ func UserAccountFromMap(m map[string]interface{}) UserAccount {
 	}
 }
 
-func (u *UserAccount) ScopesToSlice() []helpers.Scope {
-	var scopes []helpers.Scope
+func (u *UserAccount) ScopesToSlice() []string {
+	var scopes []string
 	for _, s := range u.Scopes {
-		scopes = append(scopes, helpers.Scope(s))
+		scopes = append(scopes, s)
 	}
 	return scopes
 }

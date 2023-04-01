@@ -45,14 +45,14 @@ func (h *Handler) AuthMiddleware(c *gin.Context) {
 	c.Next()
 }
 
-func (h *Handler) VerifyRequiredScopes(requiredScopes []helpers.Scope) gin.HandlerFunc {
+func (h *Handler) VerifyRequiredScopes(requiredScopes []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rawToken, exists := c.Get("token")
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing access token"})
 		}
 		token := rawToken.(*db.Token)
-		tokenScopesMap := make(map[helpers.Scope]bool)
+		tokenScopesMap := make(map[string]bool)
 		for _, scope := range token.Scopes {
 			if scope == helpers.AdminScope {
 				c.Next()

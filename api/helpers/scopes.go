@@ -1,18 +1,22 @@
 package helpers
 
-type Scope string
-
 const (
-	AdminScope            Scope = "admin"
-	ClientCreateScope     Scope = "client:create"
-	ClientListScope       Scope = "client:list"
-	CreateDevAccountScope Scope = "dev_account:create"
+	AdminScope               = "admin"
+	ClientCreateScope        = "client:create"
+	ClientListScope          = "client:list"
+	DevAccountCreateScope    = "dev_account:create"
+	UserAccountUserInfoScope = "user_account:userinfo:read"
 )
 
-func ScopesFromInterface(scopes []interface{}) []Scope {
-	var s []Scope
+var DefaultUserAccountScopes []string = []string{UserAccountUserInfoScope}
+var DefaultDevAccountScopes []string = []string{ClientCreateScope, ClientListScope, UserAccountUserInfoScope}
+
+var DefaultUserAcountScopesString = DefaultDevAccountScopes
+
+func ScopesFromInterface(scopes []interface{}) []string {
+	var s []string
 	for _, scope := range scopes {
-		s = append(s, Scope(scope.(string)))
+		s = append(s, string(scope.(string)))
 	}
 	return s
 }

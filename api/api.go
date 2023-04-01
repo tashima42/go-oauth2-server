@@ -25,7 +25,7 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	router.Use(handler.AuthMiddleware)
 	router.POST(
 		"/dev-accounts",
-		handler.VerifyRequiredScopes([]helpers.Scope{helpers.CreateDevAccountScope}),
+		handler.VerifyRequiredScopes([]string{helpers.DevAccountCreateScope}),
 		handler.CreateDevAccount,
 	)
 
@@ -34,7 +34,7 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 
 	router.POST(
 		"/clients",
-		handler.VerifyRequiredScopes([]helpers.Scope{helpers.ClientCreateScope}),
+		handler.VerifyRequiredScopes([]string{helpers.ClientCreateScope}),
 		handler.CreateClient,
 	)
 	router.GET("/userinfo", handler.UserInfo)

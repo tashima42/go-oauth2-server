@@ -63,8 +63,7 @@ func (h *Handler) CreateUserAccount(c *gin.Context) {
 		Username: createUserAccountRequest.Username,
 		Password: hashedPassword,
 		Type:     db.UserAccountType,
-		// TODO: review default scopes
-		Scopes: []string{string(helpers.ClientCreateScope), string(helpers.ClientListScope)},
+		Scopes:   helpers.DefaultUserAccountScopes,
 	}
 	err = h.repo.CreateUserAccountTxx(tx, userAccount)
 	if err != nil {
@@ -127,8 +126,7 @@ func (h *Handler) CreateDevAccount(c *gin.Context) {
 		Username: createDevAccountRequest.Username,
 		Password: hashedPassword,
 		Type:     db.DevAccountType,
-		// TODO: review default scopes
-		Scopes: []string{string(helpers.ClientCreateScope), string(helpers.ClientListScope)},
+		Scopes:   helpers.DefaultDevAccountScopes,
 	}
 	err = h.repo.CreateUserAccountTxx(tx, userAccount)
 	if err != nil {
