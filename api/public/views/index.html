@@ -250,7 +250,7 @@
       const params = getUrlParams()
       const username = document.getElementById("username").value
       const password = document.getElementById("password").value
-      const body = `client_id=${params.client_id}&redirect_uri=${params.redirect_uri}&response_type=${params.response_type}&state=${params.state}&username=${username}&password=${password}&country=${params.country}`
+      const body = `client_id=${params.client_id}&redirect_uri=${params.redirect_uri}&response_type=${params.response_type}&state=${params.state}&username=${username}&password=${password}`
 
       fetch('/auth/login', {
         method: 'POST',
@@ -282,7 +282,6 @@
         redirect_uri: null,
         response_type: null,
         state: null,
-        country: null
       }
       const urlParams = new URLSearchParams(window.location.search)
       Object.keys(params).forEach(type => {

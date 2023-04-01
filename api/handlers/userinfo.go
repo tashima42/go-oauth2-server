@@ -8,9 +8,7 @@ import (
 )
 
 type UserInfoResponse struct {
-	Success      bool   `json:"success"`
-	SubscriberId string `json:"subscriberID"`
-	CountryCode  string `json:"countryCode"`
+	Username string `json:"username"`
 }
 
 func (h *Handler) UserInfo(c *gin.Context) {
@@ -20,10 +18,6 @@ func (h *Handler) UserInfo(c *gin.Context) {
 		return
 	}
 	user := userRaw.(db.UserAccount)
-	userInfoResponse := UserInfoResponse{
-		Success:      true,
-		SubscriberId: user.SubscriberID,
-		CountryCode:  user.Country,
-	}
+	userInfoResponse := UserInfoResponse{Username: user.Username}
 	c.JSON(http.StatusOK, userInfoResponse)
 }

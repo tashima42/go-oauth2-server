@@ -30,7 +30,7 @@ type DBRepo interface {
 	DisableAuthorizationCodeByIDTxx(tx *sqlx.Tx, ID string) error
 	// UserAccount
 	CreateUserAccountTxx(tx *sqlx.Tx, ua UserAccount) error
-	GetUserAccountByUsernameAndCountryTxx(tx *sqlx.Tx, username string, country string) (*UserAccount, error)
+	GetUserAccountByUsernameTxx(tx *sqlx.Tx, username string) (*UserAccount, error)
 	GetUserAccountByIDTxx(tx *sqlx.Tx, ID string) (*UserAccount, error)
 	// Client
 	CreateClientTxx(tx *sqlx.Tx, c Client) error

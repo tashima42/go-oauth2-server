@@ -12,7 +12,6 @@ import (
 type LoginRequest struct {
 	Username     string `schema:"username"`
 	Password     string `schema:"password"`
-	Country      string `schema:"country"`
 	RedirectURI  string `schema:"redirect_uri"`
 	State        string `schema:"state"`
 	ClientID     string `schema:"client_id"`
@@ -50,9 +49,9 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	userAccount, err := h.repo.GetUserAccountByUsernameAndCountryTxx(tx, loginRequest.Username, loginRequest.Country)
+	userAccount, err := h.repo.GetUserAccountByUsernameTxx(tx, loginRequest.Username)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-INVALID-USERNAME-OR-COUNTRY"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-INVALID-USERNAME"})
 		return
 	}
 
