@@ -2,12 +2,25 @@
 load('ext://namespace', 'namespace_create', 'namespace_inject')
 namespace_create('go-oauth2-server')
 
+# Local resource to build the binary and run the server
+local_resource(
+  'go-compile',
+  'CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/go-oauth2-server ./',
+  dir='./api',
+  deps=['./api/main.go', './api.go.mod', './api.go.sum', './api/api.go'],
+)
+
 # Build Docker image
 #   More info: https://docs.tilt.dev/api.html#api.docker_build
-docker_build('k3d-registry.tashima.space:5345/tashima42/go-oauth2-server',
+load('ext://restart_process', 'docker_build_with_restart')
+docker_build_with_restart('k3d-registry.tashima.space:5345/tashima42/go-oauth2-server',
              context='.',
+             dockerfile='Dockerfile.dev',
+             entrypoint="/app/build/go-oauth2-server",
+             only=['./api/build', "./api/db/schema_migrations"],
              live_update=[
-                sync('./api', '/app'),
+                sync('./api/build', '/app/build'),
+                sync('./api/db/schema_migrations', '/app/db/schema_migrations'),
              ]
 )
 

@@ -3,6 +3,8 @@
 /api/.env
 /api/tmp
 /secrets
+/build
+/api/build
 # Binaries for programs and plugins
 *.exe
 *.exe~

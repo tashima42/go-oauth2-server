@@ -1,4 +1,4 @@
-FROM golang:1.20.2
+FROM golang:1.19
 
 WORKDIR /app
 COPY ./api/go.mod ./

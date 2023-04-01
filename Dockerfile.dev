@@ -1,0 +1,5 @@
+FROM alpine:3.17
+WORKDIR /app
+ADD ./api/db/schema_migrations db/schema_migrations
+ADD ./api/build build
+ENTRYPOINT build/go-oauth2-server
