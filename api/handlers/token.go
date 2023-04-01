@@ -103,8 +103,6 @@ func (h *Handler) Token(c *gin.Context) {
 		RefreshToken:          refreshTokenJWT,
 		RefreshTokenExpiresIn: helpers.RefreshTokenExpiration,
 	}
-	// TODO: check what happens if domain is not set
-	c.SetCookie("SESSION", accessTokenJWT, int(helpers.AccessTokenExpiration), "/", "", true, true)
 	c.JSON(http.StatusOK, tokenResponse)
 }
 

@@ -13,6 +13,7 @@ type CreateUserAccountRequest struct {
 }
 
 func (h *Handler) CreateUserAccount(c *gin.Context) {
+	// TODO: fix all the rollbacks
 	var createUserAccountRequest CreateUserAccountRequest
 	if err := c.ShouldBindJSON(&createUserAccountRequest); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errorMessage": err.Error(), "errorCode": "CREATE-USER-ACCOUNT-PARSE-FORM-ERROR"})

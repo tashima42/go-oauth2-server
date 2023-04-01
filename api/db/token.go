@@ -5,7 +5,6 @@ import (
 )
 
 type Token struct {
-	ID          string
 	ExpiresAt   time.Time
 	ClientID    string
 	UserAccount UserAccount
@@ -13,9 +12,11 @@ type Token struct {
 
 func (t *Token) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"id":           t.ID,
-		"client_id":    t.ClientID,
-		"user_account": t.UserAccount,
-		"expires_at":   t.ExpiresAt,
+		"clientID": t.ClientID,
+		"userAccount": map[string]interface{}{
+			"username": t.UserAccount.Username,
+			"id":       t.UserAccount.ID,
+		},
+		"exp": t.ExpiresAt.Unix(),
 	}
 }

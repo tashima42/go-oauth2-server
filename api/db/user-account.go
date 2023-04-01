@@ -1,6 +1,8 @@
 package db
 
 import (
+	"log"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -8,6 +10,14 @@ type UserAccount struct {
 	ID       string `db:"id"`
 	Username string `db:"username"`
 	Password string `db:"password"`
+}
+
+func UserAccountFromMap(m map[string]interface{}) UserAccount {
+	log.Println(m)
+	return UserAccount{
+		ID:       m["id"].(string),
+		Username: m["username"].(string),
+	}
 }
 
 func (r *Repo) CreateUserAccountTxx(tx *sqlx.Tx, u UserAccount) error {

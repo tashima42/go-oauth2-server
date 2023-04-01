@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -33,10 +34,11 @@ func (h *Handler) AuthMiddleware(c *gin.Context) {
 
 	token, err := h.jwtHelper.VerifyToken(accessToken)
 	if err != nil {
+		log.Println("error verifying token: ", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: invalid access token"})
 		return
 	}
 
-	c.Set("userToken", token)
+	c.Set("token", token)
 	c.Next()
 }

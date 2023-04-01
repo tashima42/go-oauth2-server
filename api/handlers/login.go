@@ -10,27 +10,15 @@ import (
 )
 
 type LoginRequest struct {
-	Username     string `schema:"username"`
-	Password     string `schema:"password"`
-	RedirectURI  string `schema:"redirect_uri"`
-	State        string `schema:"state"`
-	ClientID     string `schema:"client_id"`
-	ResponseType string `schema:"response_type"`
-}
-type LoginResponse struct {
-	RedirectURI string `json:"redirectURI"`
-	State       string `json:"state"`
-	Code        string `json:"code"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func (h *Handler) Login(c *gin.Context) {
+	// TODO: fix all the rollbacks
 	var loginRequest LoginRequest
 	if err := c.ShouldBindJSON(&loginRequest); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-PARSE-FORM-ERROR"})
-		return
-	}
-	if loginRequest.ResponseType != "code" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid response_type", "errorCode": "LOGIN-INVALID-RESPONSE-TYPE"})
 		return
 	}
 	tx, err := h.repo.BeginTxx(c, &sql.TxOptions{ReadOnly: false})
@@ -38,47 +26,38 @@ func (h *Handler) Login(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-TRANSACTION-ERROR"})
 		return
 	}
-	client, err := h.repo.GetClientByClientIDTxx(tx, loginRequest.ClientID)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-INVALID-CLIENT-ID"})
-		return
-	}
-
-	if client.RedirectURI != loginRequest.RedirectURI {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid redirect_uri", "errorCode": "LOGIN-INVALID-REDIRECT-URI"})
-		return
-	}
 
 	userAccount, err := h.repo.GetUserAccountByUsernameTxx(tx, loginRequest.Username)
 	if err != nil {
+		if err = db.Rollback(tx, err); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-ROLLBACK-ERROR"})
+			return
+		}
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error(), "errorCode": "LOGIN-INVALID-USERNAME"})
 		return
 	}
 
-	if matches, err := h.hashHelper.Verify(userAccount.Password, loginRequest.Password); err != nil || !matches {
+	if matches, err := h.hashHelper.Verify(loginRequest.Password, userAccount.Password); err != nil || !matches {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid password", "errorCode": "LOGIN-INVALID-PASSWORD"})
 		return
 	}
 
-	code, err := h.hashHelper.GenerateRandomString(64)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-FAILED-GENERATE-RANDOM-STRING"})
+	if err = tx.Commit(); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-COMMIT-ERROR"})
 		return
 	}
 
-	ac := db.AuthorizationCode{
-		RedirectURI:   loginRequest.RedirectURI,
-		ClientID:      client.ClientID,
-		UserAccountID: userAccount.ID,
-		Code:          code,
-		ExpiresAt:     helpers.NowPlusSeconds(int(helpers.AuthorizationCodeExpiration)),
+	accessToken := db.Token{
+		ClientID:    "",
+		UserAccount: *userAccount,
+		ExpiresAt:   helpers.NowPlusSeconds(int(helpers.AccessTokenExpiration)),
 	}
-	err = h.repo.CreateAuthorizationCodeTxx(tx, ac)
+	accessTokenJWT, err := h.jwtHelper.GenerateToken(accessToken.ToMap())
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-FAILED-CREATE-AUTHORIZATION-CODE"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "LOGIN-ACCESS-TOKEN-GENERATION-ERROR"})
 		return
 	}
-
-	loginResponse := LoginResponse{RedirectURI: ac.RedirectURI, State: loginRequest.State, Code: ac.Code}
-	c.JSON(http.StatusOK, loginResponse)
+	// TODO: check what happens if domain is not set
+	c.SetCookie("SESSION", accessTokenJWT, int(helpers.AccessTokenExpiration), "/", "", true, true)
+	c.Status(http.StatusOK)
 }

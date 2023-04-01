@@ -50,6 +50,10 @@ func (h *HashHelper) Hash(plain string) (string, error) {
 
 func (h *HashHelper) Verify(plain string, hash string) (bool, error) {
 	hashParts := strings.Split(hash, "$")
+
+	if len(hashParts) != 6 {
+		return false, fmt.Errorf("invalid hash format")
+	}
 	var memory, time uint32
 	var threads uint8
 	_, err := fmt.Sscanf(hashParts[3], "m=%d,t=%d,p=%d", &memory, &time, &threads)
