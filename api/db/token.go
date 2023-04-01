@@ -5,10 +5,10 @@ import (
 )
 
 type Token struct {
-	ID          string      `json:"id"`
-	ExpiresAt   time.Time   `json:"expires_at"`
-	ClientID    string      `json:"client_id"`
-	UserAccount UserAccount `json:"user_account"`
+	ID          string
+	ExpiresAt   time.Time
+	ClientID    string
+	UserAccount UserAccount
 }
 
 func (t *Token) ToMap() map[string]interface{} {

@@ -7,11 +7,11 @@ import (
 )
 
 type UserAccount struct {
-	ID           string `json:"id" db:"id"`
-	Username     string `json:"username" db:"username"`
-	Password     string `json:"password" db:"password"`
-	Country      string `json:"country" db:"country"`
-	SubscriberID string `json:"subscriber_id" db:"subscriber_id"`
+	ID           string `db:"id"`
+	Username     string `db:"username"`
+	Password     string `db:"password"`
+	Country      string `db:"country"`
+	SubscriberID string `db:"subscriber_id"`
 }
 
 func (r *Repo) CreateUserAccountTxx(tx *sql.Tx, u UserAccount) error {

@@ -7,11 +7,11 @@ import (
 )
 
 type AuthorizationCode struct {
-	ID            string    `json:"id" db:"id"`
-	Code          string    `json:"code" db:"code"`
-	Active        bool      `json:"active" db:"active"`
-	ExpiresAt     time.Time `json:"expires_at" db:"expires_at"`
-	RedirectURI   string    `json:"redirect_uri" db:"redirect_uri"`
+	ID            string    `db:"id"`
+	Code          string    `db:"code"`
+	Active        bool      `db:"active"`
+	ExpiresAt     time.Time `db:"expires_at"`
+	RedirectURI   string    `db:"redirect_uri"`
 	ClientID      string    `db:"client_id"`
 	UserAccountID string    `db:"user_account_id"`
 }

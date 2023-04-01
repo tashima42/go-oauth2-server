@@ -5,11 +5,11 @@ import (
 )
 
 type Client struct {
-	ID           int    `json:"id" db:"id"`
-	Name         string `json:"name" db:"name"`
-	ClientID     string `json:"client_id" db:"client_id"`
-	ClientSecret string `json:"client_secret" db:"client_secret"`
-	RedirectURI  string `json:"redirect_uri" db:"redirect_uri"`
+	ID           string `db:"id"`
+	Name         string `db:"name"`
+	ClientID     string `db:"client_id"`
+	ClientSecret string `db:"client_secret"`
+	RedirectURI  string `db:"redirect_uri"`
 }
 
 func (r *Repo) CreateClientTxx(tx *sqlx.Tx, c Client) error {

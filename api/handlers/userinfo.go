@@ -9,14 +9,15 @@ import (
 
 type UserInfoResponse struct {
 	Success      bool   `json:"success"`
-	SubscriberId string `json:"subscriber_id"`
-	CountryCode  string `json:"country_code"`
+	SubscriberId string `json:"subscriberID"`
+	CountryCode  string `json:"countryCode"`
 }
 
 func (h *Handler) UserInfo(c *gin.Context) {
 	userRaw, exists := c.Get("userToken")
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to get user information"})
+		return
 	}
 	user := userRaw.(db.UserAccount)
 	userInfoResponse := UserInfoResponse{

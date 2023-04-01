@@ -19,11 +19,11 @@ type TokenRequest struct {
 	RefreshToken string
 }
 type TokenResponse struct {
-	AccessToken           string             `json:"access_token"`
-	TokenType             string             `json:"token_type"`
-	ExpiresIn             helpers.Expiration `json:"expires_in"`
-	RefreshToken          string             `json:"refresh_token"`
-	RefreshTokenExpiresIn helpers.Expiration `json:"refresh_token_expires_in"`
+	AccessToken           string             `json:"accessToken"`
+	TokenType             string             `json:"tokenType"`
+	ExpiresIn             helpers.Expiration `json:"expiresIn"`
+	RefreshToken          string             `json:"refreshToken"`
+	RefreshTokenExpiresIn helpers.Expiration `json:"refreshTokenExpiresIn"`
 }
 
 func (h *Handler) Token(c *gin.Context) {
@@ -37,14 +37,17 @@ func (h *Handler) Token(c *gin.Context) {
 	tx, err := h.repo.BeginTxx(c, &sql.TxOptions{ReadOnly: false})
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-TRANSACTION-ERROR"})
+		return
 	}
 	client, err := h.repo.GetClientByClientIDTxx(tx, tokenRequest.ClientID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GET-CLIENT"})
+		return
 	}
 	// TODO: validate client
 	// if matches, err := h.hashHelper.Verify(client.ClientSecret, tokenRequest.ClientSecret); err != nil || !matches {
 	// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Client Secret", "errorCode": "TOKEN-INVALID-CLIENT-SECRET"})
+	//return
 	// }
 
 	var userAccountID *string
@@ -53,19 +56,23 @@ func (h *Handler) Token(c *gin.Context) {
 		userAccountID, err = h.authorizationCodeGrant(tx, tokenRequest)
 		if err != nil || userAccountID == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-AUTHORIZATION-CODE"})
+			return
 		}
 	case string(helpers.RefreshTokenGrantType):
 		userAccountID, err = h.refreshTokenGrant(tokenRequest)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-REFRESH-TOKEN"})
+			return
 		}
 	default:
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid Grant Type", "errorCode": "TOKEN-INVALID-GRANT-TYPE"})
+		return
 	}
 
 	userAccount, err := h.repo.GetUserAccountByIDTxx(tx, *userAccountID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GET-USER-ACCOUNT"})
+		return
 	}
 
 	accessToken := db.Token{
@@ -81,10 +88,12 @@ func (h *Handler) Token(c *gin.Context) {
 	accessTokenJWT, err := h.jwtHelper.GenerateToken(accessToken.ToMap())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GENERATE-TOKEN"})
+		return
 	}
 	refreshTokenJWT, err := h.jwtHelper.GenerateToken(refreshToken.ToMap())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GENERATE-TOKEN"})
+		return
 	}
 
 	tokenResponse := TokenResponse{

@@ -22,7 +22,10 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	router.GET("/authorize", handler.Authorize)
 	router.POST("/token", handler.Token)
 	router.POST("/auth/login", handler.Login)
-	router.Use(handler.AuthMiddleware)
+
+	router.POST("/clients", handler.CreateClient)
+	// Use Authentication middleware
+	// router.Use(handler.AuthMiddleware)
 	router.GET("/userinfo", handler.UserInfo)
 
 	// router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/views/")))
