@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/tashima42/go-oauth2-server/db"
@@ -22,6 +23,10 @@ func main() {
 			repo, err := db.Open(conf)
 			if err != nil {
 				return errors.Wrap(err, "failed to open database")
+			}
+			_, _, err = repo.MigrateUp()
+			if err != nil {
+				return errors.Wrap(err, "failed to migrate database")
 			}
 			jwtHelper, err := jwt.NewJWTHelperFromENV()
 			if err != nil {

@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/golang-migrate/migrate/v4/source"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
@@ -19,14 +19,27 @@ type DBRepo interface {
 	Close() error
 	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
 	Rollback(tx *sqlx.Tx, err error) error
+	// Migration
+	MigrateUp() (version uint, dirty bool, err error)
+	MigrateToVersion(version uint) (currentVersion uint, dirty bool, err error)
+	migration() (*migrate.Migrate, error)
+	databaseURL() string
 	// AuthorizationCode
 	CreateAuthorizationCodeTxx(tx *sqlx.Tx, ac AuthorizationCode) error
+	GetAuthorizationCodeByCodeTxx(tx *sqlx.Tx, code string) (*AuthorizationCode, error)
+	DisableAuthorizationCodeByIDTxx(tx *sqlx.Tx, ID string) error
+	// UserAccount
+	CreateUserAccountTxx(tx *sqlx.Tx, ua UserAccount) error
+	GetUserAccountByUsernameAndCountryTxx(tx *sqlx.Tx, username string, country string) (*UserAccount, error)
+	GetUserAccountByIDTxx(tx *sqlx.Tx, ID string) (*UserAccount, error)
+	// Client
+	CreateClientTxx(tx *sqlx.Tx, c Client) error
+	GetClientByClientIDTxx(tx *sqlx.Tx, clientID string) (*Client, error)
 }
 
 type Repo struct {
-	db      *sqlx.DB
-	config  Config
-	migrate source.Driver
+	db     *sqlx.DB
+	config Config
 }
 
 type Config struct {
