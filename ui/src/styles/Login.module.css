@@ -1,0 +1,40 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 450px;
+  border-radius: 15px;
+  background-color: white;
+  padding: 30px;
+}
+
+.credentialsInput {
+  width: 90%;
+  height: 25px;
+  border: 1px solid #ccc;
+  border-radius: 0.2rem;
+  padding: 0.5rem;
+  margin-bottom: 20px;
+}
+
+.loginButton {
+  width: 95%;
+  height: 40px;
+  border: 1px solid #ccc;
+  border-radius: 0.2rem;
+  background-color: rgb(47, 47, 47);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}

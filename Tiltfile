@@ -4,16 +4,16 @@ namespace_create('go-oauth2-server')
 
 # Local resource to build the binary and run the server
 local_resource(
-  'go-compile',
+  'api-compile',
   'CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/go-oauth2-server ./',
   dir='./api',
   deps=['./api/main.go', './api.go.mod', './api.go.sum', './api/api.go', './api/db', './api/handlers', './api/helpers' ],
 )
 
-# Build Docker image
+# Build API Docker image
 #   More info: https://docs.tilt.dev/api.html#api.docker_build
 load('ext://restart_process', 'docker_build_with_restart')
-docker_build_with_restart('k3d-registry.tashima.space:5345/tashima42/go-oauth2-server',
+docker_build_with_restart('k3d-registry.tashima.space:5345/tashima42/go-oauth2-server/api',
              context='.',
              dockerfile='api/Dockerfile.dev',
              entrypoint="/app/build/go-oauth2-server",
@@ -37,6 +37,9 @@ k8s_yaml([
   'k8s/database-cluster-ip-service.yaml', 
   'k8s/api-deployment.yaml', 
   'k8s/api-service.yaml',
+  'k8s/api-cluster-ip-service.yaml',
+  'k8s/ui-deployment.yaml',
+  'k8s/ui-service.yaml',
   ])
 
 k8s_resource('database-deployment', port_forwards=5432)

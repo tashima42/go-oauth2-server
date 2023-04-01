@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: go-oauth2-server-api
-          image: k3d-registry.tashima.space:5345/tashima42/go-oauth2-server
+          image: k3d-registry.tashima.space:5345/tashima42/go-oauth2-server/api
           imagePullPolicy: "Always"
           env:
             - name: TZ

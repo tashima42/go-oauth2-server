@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui-deployment
+  namespace: go-oauth2-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: ui
+  template:
+    metadata:
+      labels:
+        component: ui
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: go-oauth2-server-ui
+          image: k3d-registry.tashima.space:5345/tashima42/go-oauth2-server/ui
+          imagePullPolicy: "Always"
+          env:
+            - name: TZ
+              value: "GMT-3"
