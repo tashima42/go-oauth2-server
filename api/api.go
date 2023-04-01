@@ -24,6 +24,7 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	router.POST("/auth/login", handler.Login)
 
 	router.POST("/clients", handler.CreateClient)
+	router.POST("/user-accounts", handler.CreateUserAccount)
 	// Use Authentication middleware
 	// router.Use(handler.AuthMiddleware)
 	router.GET("/userinfo", handler.UserInfo)

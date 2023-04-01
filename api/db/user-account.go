@@ -1,8 +1,6 @@
 package db
 
 import (
-	"database/sql"
-
 	"github.com/jmoiron/sqlx"
 )
 
@@ -12,7 +10,7 @@ type UserAccount struct {
 	Password string `db:"password"`
 }
 
-func (r *Repo) CreateUserAccountTxx(tx *sql.Tx, u UserAccount) error {
+func (r *Repo) CreateUserAccountTxx(tx *sqlx.Tx, u UserAccount) error {
 	query := "INSERT INTO user_accounts(username, password) VALUES($1, $2);"
 	_, err := tx.Exec(query, u.Username, u.Password)
 	if err != nil {
