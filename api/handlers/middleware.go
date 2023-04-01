@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tashima42/go-oauth2-server/db"
+	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 func (h *Handler) CORSMiddleware(c *gin.Context) {
@@ -41,4 +43,29 @@ func (h *Handler) AuthMiddleware(c *gin.Context) {
 
 	c.Set("token", token)
 	c.Next()
+}
+
+func (h *Handler) VerifyRequiredScopes(requiredScopes []helpers.Scope) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		rawToken, exists := c.Get("token")
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing access token"})
+		}
+		token := rawToken.(*db.Token)
+		tokenScopesMap := make(map[helpers.Scope]bool)
+		for _, scope := range token.Scopes {
+			if scope == helpers.AdminScope {
+				c.Next()
+				return
+			}
+			tokenScopesMap[scope] = true
+		}
+		for _, requiredScope := range requiredScopes {
+			if _, ok := tokenScopesMap[requiredScope]; !ok {
+				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing required scope"})
+				return
+			}
+		}
+		c.Next()
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"github.com/tashima42/go-oauth2-server/db"
+	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type JWTHelper struct {
@@ -49,6 +50,7 @@ func (j *JWTHelper) VerifyToken(tokenString string) (*db.Token, error) {
 	parsedToken := db.Token{
 		ExpiresAt:   expirationTime.Time,
 		ClientID:    claims["clientID"].(string),
+		Scopes:      claims["scopes"].([]helpers.Scope),
 		UserAccount: db.UserAccountFromMap(claims["userAccount"].(map[string]interface{})),
 	}
 	return &parsedToken, nil
