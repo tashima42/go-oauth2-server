@@ -37,9 +37,9 @@ k8s_yaml([
   'k8s/database-cluster-ip-service.yaml', 
   'k8s/api-deployment.yaml', 
   'k8s/api-service.yaml',
-  'k8s/api-cluster-ip-service.yaml',
-  'k8s/ui-deployment.yaml',
-  'k8s/ui-service.yaml',
+  # 'k8s/api-cluster-ip-service.yaml',
+  # 'k8s/ui-deployment.yaml',
+  # 'k8s/ui-service.yaml',
   ])
 
 k8s_resource('database-deployment', port_forwards=5432)

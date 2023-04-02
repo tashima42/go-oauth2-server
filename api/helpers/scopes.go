@@ -1,15 +1,24 @@
 package helpers
 
 const (
-	AdminScope               = "admin"
-	ClientCreateScope        = "client:create"
-	ClientListScope          = "client:list"
-	DevAccountCreateScope    = "dev_account:create"
-	UserAccountUserInfoScope = "user_account:userinfo:read"
+	AdminScope                   = "admin"
+	ClientCreateScope            = "client:create"
+	ClientListScope              = "client:list"
+	ClientInfoReadScope          = "client:info:read"
+	DevAccountCreateScope        = "dev_account:create"
+	UserAccountUserInfoReadScope = "user_account:userinfo:read"
 )
 
-var DefaultUserAccountScopes []string = []string{UserAccountUserInfoScope}
-var DefaultDevAccountScopes []string = []string{ClientCreateScope, ClientListScope, UserAccountUserInfoScope}
+var DefaultUserAccountScopes []string = []string{
+	UserAccountUserInfoReadScope,
+	ClientInfoReadScope,
+}
+var DefaultDevAccountScopes []string = []string{
+	ClientCreateScope,
+	ClientListScope,
+	UserAccountUserInfoReadScope,
+	ClientInfoReadScope,
+}
 
 var DefaultUserAcountScopesString = DefaultDevAccountScopes
 

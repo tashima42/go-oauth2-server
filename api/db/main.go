@@ -34,6 +34,7 @@ type DBRepo interface {
 	GetUserAccountByIDTxx(tx *sqlx.Tx, ID string) (*UserAccount, error)
 	// Client
 	CreateClientTxx(tx *sqlx.Tx, c Client) error
+	GetClientByClientID(ctx context.Context, clientID string) (*Client, error)
 	GetClientByClientIDTxx(tx *sqlx.Tx, clientID string) (*Client, error)
 }
 

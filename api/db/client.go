@@ -1,6 +1,8 @@
 package db
 
 import (
+	"context"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
@@ -21,6 +23,22 @@ func (r *Repo) CreateClientTxx(tx *sqlx.Tx, c Client) error {
 		return err
 	}
 	return nil
+}
+
+func (r *Repo) GetClientByClientID(ctx context.Context, clientID string) (*Client, error) {
+	tx, err := r.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	c, err := r.GetClientByClientIDTxx(tx, clientID)
+	if err != nil {
+		return nil, Rollback(tx, err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, Rollback(tx, err)
+	}
+	return c, nil
 }
 
 func (r *Repo) GetClientByClientIDTxx(tx *sqlx.Tx, clientID string) (*Client, error) {

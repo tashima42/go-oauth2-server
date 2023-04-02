@@ -35,7 +35,7 @@ func (h *Handler) Authorize(c *gin.Context) {
 		return
 	}
 
-	requestedScopes := strings.Split(authorizeRequest.Scope, "+")
+	requestedScopes := strings.Split(authorizeRequest.Scope, " ")
 
 	tx, err := h.repo.BeginTxx(c, nil)
 	if err != nil {
@@ -63,8 +63,8 @@ func (h *Handler) Authorize(c *gin.Context) {
 		return
 	}
 
-	areRequestedScopesqSubsetOfClientScopes := helpers.IsSliceSubset(requestedScopes, client.Scopes)
-	if !areRequestedScopesqSubsetOfClientScopes {
+	requestedSubsetOfClientScopes := helpers.IsSliceSubset(requestedScopes, client.Scopes)
+	if !requestedSubsetOfClientScopes {
 		if err = db.Rollback(tx, err); err != nil {
 			redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
 			c.Redirect(http.StatusFound, redirectLocation)

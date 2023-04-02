@@ -29,6 +29,11 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 		handler.CreateDevAccount,
 	)
 
+	router.GET("/clients/:clientID",
+		handler.VerifyRequiredScopes([]string{helpers.ClientInfoReadScope}),
+		handler.GetClientInfo,
+	)
+
 	router.GET("/authorize", handler.Authorize)
 	router.POST("/token", handler.Token)
 
@@ -39,7 +44,7 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	)
 	router.GET(
 		"/userinfo",
-		handler.VerifyRequiredScopes([]string{helpers.UserAccountUserInfoScope}),
+		handler.VerifyRequiredScopes([]string{helpers.UserAccountUserInfoReadScope}),
 		handler.UserInfo,
 	)
 

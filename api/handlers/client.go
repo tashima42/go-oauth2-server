@@ -12,12 +12,19 @@ type CreateClientRequest struct {
 	Name        string `json:"name"`
 	RedirectURI string `json:"redirectURI"`
 }
-
 type CreateClientResponse struct {
 	Name         string `json:"name"`
 	ClientID     string `json:"clientID"`
 	ClientSecret string `json:"clientSecret"`
 	RedirectURI  string `json:"redirectURI"`
+}
+
+type ClientInfoRequest struct {
+	ClientID string `json:"clientID"`
+}
+type ClientInfoResponse struct {
+	ClientID string `json:"clientID"`
+	Name     string `json:"name"`
 }
 
 func (h *Handler) CreateClient(c *gin.Context) {
@@ -105,4 +112,18 @@ func (h *Handler) CreateClient(c *gin.Context) {
 		RedirectURI:  client.RedirectURI,
 	}
 	c.JSON(http.StatusCreated, createClientResponse)
+}
+
+func (h *Handler) GetClientInfo(c *gin.Context) {
+	clientInfoRequest := ClientInfoRequest{ClientID: c.Param("clientID")}
+	client, err := h.repo.GetClientByClientID(c, clientInfoRequest.ClientID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"errorMessage": err.Error(), "errorCode": "GET-CLIENT-INFO-GET-CLIENT-ERROR"})
+		return
+	}
+	clientInfoResponse := ClientInfoResponse{
+		ClientID: client.ClientID,
+		Name:     client.Name,
+	}
+	c.JSON(http.StatusOK, clientInfoResponse)
 }

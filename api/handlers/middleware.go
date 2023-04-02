@@ -32,6 +32,9 @@ func (h *Handler) AuthMiddleware(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing access token"})
 			return
 		}
+	} else {
+		// remove "Bearer " from the beginning of the token
+		accessToken = accessToken[7:]
 	}
 
 	token, err := h.jwtHelper.VerifyToken(accessToken)

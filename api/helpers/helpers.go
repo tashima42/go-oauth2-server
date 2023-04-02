@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"log"
 	"time"
 )
 
@@ -23,6 +24,7 @@ func IsSliceSubset(subset, superset []string) bool {
 	}
 	for _, sb := range subset {
 		if _, ok := supersetMap[sb]; !ok {
+			log.Println("sb", sb, "not in supersetMap")
 			return false
 		}
 	}
