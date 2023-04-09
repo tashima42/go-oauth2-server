@@ -1,7 +1,0 @@
-apiVersion: v2
-name: go-oauth2-server-api
-version: 0.0.0-alpha.0.1
-description: Oauth2 api's implementation in Go
-home: The URL of this projects home page (optional)
-sources:
-  - https://github.com/tashima42/go-oauth2-server

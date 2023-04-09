@@ -5,6 +5,7 @@
 /secrets
 /build
 /api/build
+/ui-react
 # Binaries for programs and plugins
 *.exe
 *.exe~

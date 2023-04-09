@@ -1,6 +1,7 @@
+load('ext://helm_resource', 'helm_resource', 'helm_repo')
 # Set Namespace
 load('ext://namespace', 'namespace_create', 'namespace_inject')
-namespace_create('go-oauth2-server')
+namespace_create('go-oauth2-server-local')
 
 # Local resource to build the binary and run the server
 local_resource(
@@ -31,18 +32,17 @@ secret_create_generic('jwtsecret', namespace="go-oauth2-server", from_file="JWTS
 
 # Apply Kubernetes manifests
 #   More info: https://docs.tilt.dev/api.html#api.k8s_yaml
-k8s_yaml([
-  'k8s/database-persistent-volume-claim.yaml', 
-  'k8s/database-deployment.yaml', 
-  'k8s/database-cluster-ip-service.yaml', 
-  'k8s/api-deployment.yaml', 
-  'k8s/api-service.yaml',
-  # 'k8s/api-cluster-ip-service.yaml',
-  # 'k8s/ui-deployment.yaml',
-  # 'k8s/ui-service.yaml',
-  ])
+# k8s_yaml([
+#   'k8s/database-persistent-volume-claim.yaml', 
+#   'k8s/database-deployment.yaml', 
+#   'k8s/database-cluster-ip-service.yaml', 
+#   'k8s/api-deployment.yaml', 
+#   'k8s/api-service.yaml',
+#   # 'k8s/api-cluster-ip-service.yaml',
+#   # 'k8s/ui-deployment.yaml',
+#   # 'k8s/ui-service.yaml',
+#   ])
 
-k8s_resource('database-deployment', port_forwards=5432)
-k8s_resource('api-deployment', port_forwards=8096)
+# k8s_resource('database-deployment', port_forwards=5432)
+# k8s_resource('api-deployment', port_forwards=8096)
 
-load('ext://git_resource', 'git_checkout')
