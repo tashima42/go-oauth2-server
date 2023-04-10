@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: database-deployment
-  namespace: go-oauth2-server
+  namespace: go-oauth2-server-local
 spec:
   replicas: 1
   selector:

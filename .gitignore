@@ -2,7 +2,7 @@
 /tmp
 /api/.env
 /api/tmp
-/secrets
+/.secrets
 /build
 /api/build
 /ui-react

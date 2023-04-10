@@ -14,6 +14,10 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
 func (h *Handler) Login(c *gin.Context) {
 	// TODO: fix all the rollbacks
 	var loginRequest LoginRequest
@@ -60,5 +64,5 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 	// TODO: check what happens if domain is not set
 	c.SetCookie("SESSION", accessTokenJWT, int(helpers.AccessTokenExpiration), "/", "", true, true)
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, LoginResponse{Token: accessTokenJWT})
 }

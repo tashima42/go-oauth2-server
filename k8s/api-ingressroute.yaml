@@ -1,0 +1,14 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: go-oauth2-server-api-secure
+  namespace: go-oauth2-server-local
+spec:
+  entrypoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host("oauth.local.tashima.space") && PathPrefix("/api")
+      services:
+        - name: api-service
+          port: 8096

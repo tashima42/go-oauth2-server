@@ -20,7 +20,10 @@ var DefaultDevAccountScopes []string = []string{
 	ClientInfoReadScope,
 }
 
-var DefaultUserAcountScopesString = DefaultDevAccountScopes
+var DefaultClientScopes []string = []string{
+	ClientInfoReadScope,
+	UserAccountUserInfoReadScope,
+}
 
 func ScopesFromInterface(scopes []interface{}) []string {
 	var s []string

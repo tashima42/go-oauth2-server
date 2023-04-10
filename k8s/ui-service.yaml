@@ -2,11 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ui-service
-  namespace: go-oauth2-server
+  namespace: go-oauth2-server-local
 spec:
   ports:
     - name: ui-service
-      port: 3000
-      targetPort: 3000
+      port: 8080
+      targetPort: 80
   selector:
     component: ui

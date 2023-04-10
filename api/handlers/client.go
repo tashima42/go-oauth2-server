@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/tashima42/go-oauth2-server/db"
+	"github.com/tashima42/go-oauth2-server/helpers"
 )
 
 type CreateClientRequest struct {
@@ -86,6 +87,7 @@ func (h *Handler) CreateClient(c *gin.Context) {
 		ClientID:     createClientRequest.ClientID,
 		ClientSecret: hashedClientSecret,
 		RedirectURI:  createClientRequest.RedirectURI,
+		Scopes:       helpers.DefaultClientScopes,
 	}
 
 	err = h.repo.CreateClientTxx(tx, client)
