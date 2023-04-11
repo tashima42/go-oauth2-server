@@ -19,23 +19,6 @@ export default {
     }
     return response.json()
   },
-  async getToken(getTokenRequest: GetTokenRequest): Promise<GetTokenResponse> {
-    const basicAuth = Buffer.from(`${getTokenRequest.clientID}:${getTokenRequest.clientSecret}`).toString('base64')
-    const response = await fetch('/api/token', {
-      method: 'POST',
-      headers: { 'Authorization': `Basic ${basicAuth}` },
-      body: new URLSearchParams({
-        grant_type: getTokenRequest.grantType,
-        code: getTokenRequest.code,
-        redirect_uri: getTokenRequest.redirectURI,
-        client_id: getTokenRequest.clientID,
-      }).toString(),
-    })
-    if (response.status !== 200) {
-      throw new Error('Failed to get token')
-    }
-    return response.json()
-  }
 }
 
 interface LoginRequest {
@@ -56,20 +39,4 @@ interface UserInfoResponse {
 interface ClientInfoResponse {
   clientID: string
   name: string
-}
-
-interface GetTokenRequest {
-  grantType: string
-  code: string
-  redirectURI: string
-  clientID: string
-  clientSecret: string
-}
-
-interface GetTokenResponse {
-  accessToken: string
-  expiresIn: number
-  refreshToken: string
-  refreshTokenExpiresIn: string
-  tokenType: string
 }

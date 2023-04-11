@@ -1,28 +1,44 @@
 <script setup lang="ts">
-// import router from '@/router';
 import router from '@/router';
 import { ref, onMounted } from 'vue';
 import api from "@/api";
-const clientName = ref('TODO REPLACE');
 const query = router.currentRoute.value.query;
-const scopeRaw = query.scope ? query.scope as string : '';
-const scopes = scopeRaw.split(' ');
+const code = query.code as string;
+const clientID = ref("")
+const clientSecret = ref("")
+const redirectURI = ref("")
 
-onMounted(async () => {
+async function getToken() {
   try {
-    await api.userInfo()
+    const response = await api.getToken({
+        grantType: "authorization_code",
+        code,
+        redirectURI: redirectURI.value,
+        clientID: clientID.value,
+        clientSecret: clientSecret.value,
+    })
+    // TODO: show response in some place
+    console.log(response)
   } catch (error) {
     console.error(error)
-    alert("You are not logged in")
   }
-})
-
-function getToken() {
 }
 </script>
 
 <template>
   <form autocomplete="on" @submit="e => e.preventDefault()" class="client-info-form">
+    <div class="form-group">
+      <label for="clientID">Client ID:</label>
+      <input type="text" id="clientID" v-model="clientID" />
+    </div>
+    <div class="form-group">
+      <label for="clientSecret">Client Secret:</label>
+      <input type="text" id="clientSecret" v-model="clientSecret" />
+    </div>
+    <div class="form-group">
+      <label for="redirectURI">Redirect URI:</label>
+      <input type="text" id="redirectURI" v-model="redirectURI" />
+    </div>
     <button v-on:click="getToken">Get Token</button>
   </form>
 </template>
@@ -38,10 +54,6 @@ function getToken() {
   border-radius: 10px;
   color: var(--color-text);
   padding: 1rem;
-}
-
-.scopes-list {
-  text-align: left;
 }
 
 .client-info-form h1 span {
@@ -69,5 +81,14 @@ function getToken() {
 
 .authorize-form button:hover {
   border: 1px solid var(--vt-c-white);
+}
+
+.form-group input {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  color: var(--color-text);
 }
 </style>

@@ -21,6 +21,15 @@ local_resource(
   labels=["ui"]
 )
 
+# Local resource to build de client simulator ui
+local_resource(
+  'ui-client-simulator-compile',
+  'yarn run build',
+  dir='./ui-client-simulator',
+  deps=['./ui-client-simulator/package.json', './ui-client-simulator/package-lock.json', './ui-client-simulator/src'],
+  labels=["ui-client-simulator"]
+)
+
 # Build API Docker image
 #   More info: https://docs.tilt.dev/api.html#api.docker_build
 load('ext://restart_process', 'docker_build_with_restart')
@@ -41,10 +50,22 @@ docker_build(
   'k3d-registry.local.tashima.space/tashima42/go-oauth2-server/ui',
   context='.',
   dockerfile='ui/Dockerfile.dev',
-  only=['./ui/dist', './ui/nginx.conf', './ui/hack'],
+  only=['./ui/dist', './ui/nginx.conf'],
   live_update=[
     sync('./ui/dist', '/app'),
     sync('./ui/nginx.conf', '/etc/nginx/nginx.conf'),
+  ],
+)
+
+# Build Client Simulator UI Docker image
+docker_build(
+  'k3d-registry.local.tashima.space/tashima42/go-oauth2-server/ui-client-simulator',
+  context='.',
+  dockerfile='ui-client-simulator/Dockerfile.dev',
+  only=['./ui-client-simulator/dist', './ui-client-simulator/nginx.conf'],
+  live_update=[
+    sync('./ui-client-simulator/dist', '/app'),
+    sync('./ui-client-simulator/nginx.conf', '/etc/nginx/nginx.conf'),
   ],
 )
 
@@ -70,7 +91,13 @@ k8s_yaml([
   'k8s/ui-service.yaml',
   'k8s/ui-ingressroute.yaml',
 ])
+k8s_yaml([
+  'k8s/ui-client-simulator-deployment.yaml',
+  'k8s/ui-client-simulator-service.yaml',
+  'k8s/ui-client-simulator-ingressroute.yaml',
+])
 
 k8s_resource('database-deployment', port_forwards='5432:5432', labels=["db"])
 k8s_resource('api-deployment',  labels=["api"])
 k8s_resource('ui-deployment', labels=["ui"])
+k8s_resource('ui-client-simulator-deployment', labels=["ui-client-simulator"])

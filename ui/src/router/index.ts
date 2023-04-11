@@ -19,11 +19,6 @@ const router = createRouter({
       name: 'loggedin',
       component: () => import('../views/LoggedInView.vue')
     },
-    {
-      path: '/client-simulator',
-      name: 'client-simulator',
-      component: () => import('../views/ClientSimulatorView.vue')
-    },
   ]
 })
 
