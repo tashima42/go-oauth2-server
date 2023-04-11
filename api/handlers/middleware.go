@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tashima42/go-oauth2-server/db"
@@ -55,11 +57,45 @@ func (h *Handler) VerifyRequiredScopes(requiredScopes []string) gin.HandlerFunc 
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing access token"})
 		}
 		token := rawToken.(*db.Token)
-		isRequiredScopeSubsetOfTokenScopes := helpers.IsSliceSubset(requiredScopes, token.Scopes)
-		if !isRequiredScopeSubsetOfTokenScopes {
+		log.Println("requiredScopes: ", requiredScopes)
+		log.Println("token.Scopes: ", token.Scopes)
+		valid := helpers.SliceContainsSlice(requiredScopes, token.Scopes)
+		log.Println("valid: ", valid)
+		if !valid {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: missing required scope"})
 			return
 		}
 		c.Next()
 	}
+}
+
+func (h *Handler) BasicAuthClientMiddleware(c *gin.Context) {
+	basicAuth := c.GetHeader("Authorization")
+	if basicAuth == "" {
+	} else {
+		// remove "Basic " from the beginning of the token
+		basicAuth = basicAuth[6:]
+	}
+
+	decodedAuth, err := base64.StdEncoding.DecodeString(basicAuth)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: invalid client credentials"})
+	}
+
+	// split the decoded auth into clientID and clientSecret by the colon
+	auth := strings.Split(string(decodedAuth), ":")
+	clientID := auth[0]
+	clientSecret := auth[1]
+
+	client, err := h.repo.GetClientByClientID(c, clientID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: invalid client credentials"})
+	}
+
+	if valid, err := h.hashHelper.Verify(clientSecret, client.ClientSecret); !valid || err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: invalid client credentials"})
+	}
+
+	c.Set("client", client)
+	c.Next()
 }

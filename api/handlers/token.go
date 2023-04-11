@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,21 +40,24 @@ func (h *Handler) Token(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-TRANSACTION-ERROR"})
 		return
 	}
-	client, err := h.repo.GetClientByClientIDTxx(tx, tokenRequest.ClientID)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-FAILED-TO-GET-CLIENT"})
+	rawClient, exists := c.Get("client")
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing client", "errorCode": "TOKEN-INVALID-CLIENT"})
 		return
 	}
-	// TODO: validate client
-	// if matches, err := h.hashHelper.Verify(client.ClientSecret, tokenRequest.ClientSecret); err != nil || !matches {
-	// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Client Secret", "errorCode": "TOKEN-INVALID-CLIENT-SECRET"})
-	//return
-	// }
+	client := rawClient.(*db.Client)
+
+	log.Println("TokenRequest: ", tokenRequest)
+	log.Println("ClientID: ", client.ClientID, " tokenRequest.ClientID: ", tokenRequest.ClientID)
+	if client.ClientID != tokenRequest.ClientID {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: mismatched clientID in body and authorization header", "errorCode": "TOKEN-INVALID-CLIENT"})
+		return
+	}
 
 	var userAccountID *string
 	switch tokenRequest.GrantType {
 	case string(helpers.AuthorizationCodeGrantType):
-		userAccountID, err = h.authorizationCodeGrant(tx, tokenRequest)
+		userAccountID, err = h.authorizationCodeGrant(tx, tokenRequest, client)
 		if err != nil || userAccountID == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "errorCode": "TOKEN-INVALID-AUTHORIZATION-CODE"})
 			return
@@ -79,11 +83,13 @@ func (h *Handler) Token(c *gin.Context) {
 		ClientID:    client.ClientID,
 		UserAccount: *userAccount,
 		ExpiresAt:   helpers.NowPlusSeconds(int(helpers.AccessTokenExpiration)),
+		Scopes:      client.Scopes,
 	}
 	refreshToken := db.Token{
 		ClientID:    client.ClientID,
 		UserAccount: *userAccount,
 		ExpiresAt:   helpers.NowPlusSeconds(int(helpers.RefreshTokenExpiration)),
+		Scopes:      client.Scopes,
 	}
 	accessTokenJWT, err := h.jwtHelper.GenerateToken(accessToken.ToMap())
 	if err != nil {
@@ -106,8 +112,8 @@ func (h *Handler) Token(c *gin.Context) {
 	c.JSON(http.StatusOK, tokenResponse)
 }
 
-func (h *Handler) authorizationCodeGrant(tx *sqlx.Tx, tokenRequest TokenRequest) (userAccountID *string, err error) {
-	authorizationCode, err := h.repo.GetAuthorizationCodeByCodeTxx(tx, tokenRequest.Code)
+func (h *Handler) authorizationCodeGrant(tx *sqlx.Tx, tokenRequest TokenRequest, client *db.Client) (userAccountID *string, err error) {
+	authorizationCode, err := h.repo.GetAuthorizationCodeByCodeAndClientTxx(tx, tokenRequest.Code, client.ID)
 	if err != nil {
 		return nil, err
 	}

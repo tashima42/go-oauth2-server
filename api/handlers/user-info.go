@@ -17,6 +17,7 @@ func (h *Handler) UserInfo(c *gin.Context) {
 	rawToken, exists := c.Get("token")
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: missing access token"})
+		return
 	}
 	token := rawToken.(*db.Token)
 	user := token.UserAccount

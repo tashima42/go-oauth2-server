@@ -22,6 +22,8 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	api.POST("/login", handler.Login)
 	api.POST("/user-accounts", handler.CreateUserAccount)
 
+	api.POST("/token", handler.BasicAuthClientMiddleware, handler.Token)
+
 	api.Use(handler.AuthMiddleware)
 	api.POST(
 		"/dev-accounts",
@@ -35,7 +37,6 @@ func Serve(repo *db.Repo, hashHelper *helpers.HashHelper, jwtHelper *jwt.JWTHelp
 	)
 
 	api.GET("/authorize", handler.Authorize)
-	api.POST("/token", handler.Token)
 
 	api.POST(
 		"/clients",

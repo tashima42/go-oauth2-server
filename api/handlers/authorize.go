@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/tashima42/go-oauth2-server/db"
 	"github.com/tashima42/go-oauth2-server/helpers"
 )
@@ -63,8 +65,8 @@ func (h *Handler) Authorize(c *gin.Context) {
 		return
 	}
 
-	requestedSubsetOfClientScopes := helpers.IsSliceSubset(requestedScopes, client.Scopes)
-	if !requestedSubsetOfClientScopes {
+	validScopes := helpers.SliceContainsSlice(requestedScopes, client.Scopes)
+	if !validScopes {
 		if err = db.Rollback(tx, err); err != nil {
 			redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
 			c.Redirect(http.StatusFound, redirectLocation)
@@ -85,19 +87,51 @@ func (h *Handler) Authorize(c *gin.Context) {
 
 	switch authorizeRequest.ResponseType {
 	case "code":
-		h.authorizeAuthorizationCodeGrant(c, authorizeRequest, redirectLocation, *parsedToken)
+		h.authorizeAuthorizationCodeGrant(c, tx, authorizeRequest, redirectLocation, *parsedToken)
 		return
 	case "token":
-		h.authorizeImplicitGrant(c, authorizeRequest, redirectLocation, *parsedToken, requestedScopes)
+		h.authorizeImplicitGrant(c, tx, authorizeRequest, redirectLocation, *parsedToken, requestedScopes)
 		return
 	}
 	redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", UnsupportedResponseType.Error(), "response type not supported"))
 	c.Redirect(http.StatusFound, redirectLocation)
 }
 
-func (h *Handler) authorizeAuthorizationCodeGrant(c *gin.Context, authorizeRequest AuthorizeRequest, redirectLocation string, token db.Token) {
+func (h *Handler) authorizeAuthorizationCodeGrant(c *gin.Context, tx *sqlx.Tx, authorizeRequest AuthorizeRequest, redirectLocation string, token db.Token) {
 	// TODO: document the size of the code
 	code, err := h.hashHelper.GenerateRandomString(64)
+	if err != nil {
+		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
+		c.Redirect(http.StatusFound, redirectLocation)
+		return
+	}
+
+	client, err := h.repo.GetClientByClientIDTxx(tx, authorizeRequest.ClientID)
+	if err != nil {
+		db.Rollback(tx, err)
+		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
+		c.Redirect(http.StatusFound, redirectLocation)
+		return
+	}
+
+	expiresAt := helpers.NowPlusSeconds(int(helpers.AuthorizationCodeExpiration))
+	authorizationCode := db.AuthorizationCode{
+		Code:          code,
+		ClientID:      client.ID,
+		ExpiresAt:     pq.NullTime{Time: expiresAt, Valid: true},
+		RedirectURI:   authorizeRequest.RedirectURI,
+		UserAccountID: token.UserAccount.ID,
+	}
+
+	err = h.repo.CreateAuthorizationCodeTxx(tx, authorizationCode)
+	if err != nil {
+		db.Rollback(tx, err)
+		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
+		c.Redirect(http.StatusFound, redirectLocation)
+		return
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
 		c.Redirect(http.StatusFound, redirectLocation)
@@ -108,7 +142,7 @@ func (h *Handler) authorizeAuthorizationCodeGrant(c *gin.Context, authorizeReque
 	c.Redirect(http.StatusFound, redirectLocation)
 }
 
-func (h *Handler) authorizeImplicitGrant(c *gin.Context, authorizeRequest AuthorizeRequest, redirectLocation string, token db.Token, scopes []string) {
+func (h *Handler) authorizeImplicitGrant(c *gin.Context, tx *sqlx.Tx, authorizeRequest AuthorizeRequest, redirectLocation string, token db.Token, scopes []string) {
 	accessToken := db.Token{
 		ClientID:    authorizeRequest.ClientID,
 		UserAccount: token.UserAccount,
@@ -120,6 +154,14 @@ func (h *Handler) authorizeImplicitGrant(c *gin.Context, authorizeRequest Author
 		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating token"))
 		c.Redirect(http.StatusFound, redirectLocation)
 	}
+
+	err = tx.Commit()
+	if err != nil {
+		redirectLocation = redirectLocation + url.QueryEscape(fmt.Sprintf("error=%s&error_description=%s", ServerError.Error(), "internal error while generating code"))
+		c.Redirect(http.StatusFound, redirectLocation)
+		return
+	}
+
 	redirectLocation = strings.Replace(redirectLocation, "?", "#", 1) + url.QueryEscape(fmt.Sprintf("access_token=%s&token_type=bearer&expires_in=%d&state=%s", accessTokenJWT, helpers.AccessTokenExpiration, authorizeRequest.State))
 	log.Println("redirectLocation", redirectLocation)
 	c.Redirect(http.StatusFound, redirectLocation)

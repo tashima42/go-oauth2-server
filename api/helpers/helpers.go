@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"log"
 	"time"
 )
 
@@ -17,14 +16,13 @@ func FormatDateIso(date time.Time) string {
 	return date.Format("2006-01-02T15:04:05-0700")
 }
 
-func IsSliceSubset(subset, superset []string) bool {
+func SliceContainsSlice(subset, superset []string) bool {
 	supersetMap := make(map[string]bool)
-	for _, sp := range superset {
-		supersetMap[sp] = true
+	for _, sb := range superset {
+		supersetMap[sb] = true
 	}
 	for _, sb := range subset {
-		if _, ok := supersetMap[sb]; !ok {
-			log.Println("sb", sb, "not in supersetMap")
+		if !supersetMap[sb] {
 			return false
 		}
 	}
